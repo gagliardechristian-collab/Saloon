@@ -194,6 +194,29 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
       </div>
 
       <div class="panel">
+        <h2>Wareneinkauf</h2>
+        <p style="margin:8px 0 4px;">Artikel auswählen</p>
+        <select id="purchaseProductSelect" class="full"></select>
+        <p style="margin:12px 0 4px;">Menge</p>
+        <input id="purchaseQtyInput" type="number" min="1" step="1" value="1">
+        <button onclick="addPurchaseItem()" style="margin-top:12px;">Zum Einkauf hinzufügen</button>
+
+        <table id="purchaseTable"></table>
+        <div class="total">Einkauf gesamt: $<span id="purchaseTotal">0.00</span></div>
+        <button onclick="clearPurchaseCart()">Einkaufsliste löschen</button>
+        <button onclick="submitPurchaseOrder()">Einkauf buchen & von Kasse abziehen</button>
+        <div class="notice" id="purchaseNotice"></div>
+      </div>
+
+
+      <div class="panel">
+        <h2>Einkaufsübersicht</h2>
+        <table id="purchaseHistoryTable"></table>
+        <button class="dangerbtn" onclick="clearPurchaseHistory()" style="margin-top:12px;">Einkaufshistorie löschen</button>
+        <div class="notice" id="purchaseHistoryNotice">Alle gebuchten Wareneinkäufe mit Datum, Menge und Kosten.</div>
+      </div>
+
+      <div class="panel">
         <h2>Artikel bearbeiten</h2>
         <table id="editProductsTable"></table>
         <div class="notice">Name, Verkauf und Einkauf ändern und mit einem Klick speichern.</div>
@@ -219,6 +242,8 @@ let sales = [];
 let bank = 0;
 let activeEmployeeId = null;
 let cart = {};
+let purchaseCart = {};
+let purchaseHistory = [];
 let customCategories = [];
 
 const byId = id => document.getElementById(id);
@@ -256,6 +281,8 @@ function showUserNotice(msg){ byId("userNotice").textContent = msg || ""; }
 function showAdminNotice(msg){ const el = byId("adminNotice"); if (el) el.textContent = msg || ""; }
 function showSalesNotice(msg){ const el = byId("salesNotice"); if (el) el.textContent = msg || ""; }
 function showDeleteNotice(msg){ const el = byId("deleteNotice"); if (el) el.textContent = msg || ""; }
+function showPurchaseNotice(msg){ const el = byId("purchaseNotice"); if (el) el.textContent = msg || ""; }
+function showPurchaseHistoryNotice(msg){ const el = byId("purchaseHistoryNotice"); if (el) el.textContent = msg || ""; }
 
 function getActiveEmployee(){
   return employees.find(e => e.id === activeEmployeeId) || null;
@@ -539,6 +566,7 @@ async function loadAllData(){
   bank = Number(settings.bank_total?.amount || 0);
   activeEmployeeId = settings.active_employee_id?.id || null;
   customCategories = Array.isArray(settings.custom_categories?.items) ? settings.custom_categories.items : [];
+  purchaseHistory = Array.isArray(settings.purchase_history?.items) ? settings.purchase_history.items : [];
 
   byId("bank").value = bank;
   const bd = byId("bankDisplay"); if (bd) bd.textContent = money(bank);
@@ -793,6 +821,189 @@ async function resetSales(){
   showUserNotice("Alle Umsätze wurden gelöscht.");
 }
 window.resetSales = resetSales;
+
+async function savePurchaseHistory(){
+  await upsertSetting("purchase_history", { items: purchaseHistory });
+}
+
+async function clearPurchaseHistory(){
+  if (!confirm("Wirklich die komplette Einkaufshistorie löschen?")) return;
+  purchaseHistory = [];
+  await savePurchaseHistory();
+  renderPurchaseHistory();
+  showPurchaseHistoryNotice("Einkaufshistorie wurde gelöscht.");
+}
+window.clearPurchaseHistory = clearPurchaseHistory;
+
+function addPurchaseItem(){
+  const productId = byId("purchaseProductSelect")?.value;
+  const qty = Math.max(1, Number(byId("purchaseQtyInput")?.value || 1));
+  const product = products.find(p => p.id === productId);
+  if (!product) return showPurchaseNotice("Bitte zuerst einen Artikel auswählen.");
+
+  if (!purchaseCart[productId]) {
+    purchaseCart[productId] = {
+      product_id: product.id,
+      product_name: product.name,
+      qty: 0,
+      cost_price: Number(product.cost_price || 0)
+    };
+  }
+  purchaseCart[productId].qty += qty;
+  renderPurchaseCart();
+  showPurchaseNotice(product.name + " wurde zur Einkaufsliste hinzugefügt.");
+}
+window.addPurchaseItem = addPurchaseItem;
+
+function removePurchaseItem(productId){
+  if (!purchaseCart[productId]) return;
+  purchaseCart[productId].qty -= 1;
+  if (purchaseCart[productId].qty <= 0) delete purchaseCart[productId];
+  renderPurchaseCart();
+}
+window.removePurchaseItem = removePurchaseItem;
+
+function clearPurchaseCart(){
+  purchaseCart = {};
+  renderPurchaseCart();
+  showPurchaseNotice("Einkaufsliste wurde gelöscht.");
+}
+window.clearPurchaseCart = clearPurchaseCart;
+
+async function submitPurchaseOrder(){
+  const entries = Object.values(purchaseCart);
+  if (!entries.length) return showPurchaseNotice("Keine Artikel in der Einkaufsliste.");
+
+  const ids = entries.map(e => e.product_id);
+  const { data: liveProducts, error: pErr } = await supabase.from("products").select("*").in("id", ids);
+  if (pErr) return alert(pErr.message);
+
+  const liveMap = Object.fromEntries((liveProducts || []).map(p => [p.id, p]));
+  let totalCost = 0;
+
+  for (const entry of entries) {
+    const product = liveMap[entry.product_id];
+    if (!product) return alert("Artikel nicht gefunden: " + entry.product_name);
+    entry.cost_price = Number(product.cost_price || 0);
+    totalCost += entry.cost_price * entry.qty;
+  }
+
+  if (Number(bank) < totalCost) {
+    return showPurchaseNotice("Zu wenig Geld in der Kasse. Benötigt: $" + money(totalCost));
+  }
+
+  for (const entry of entries) {
+    const product = liveMap[entry.product_id];
+    const newStock = Number(product.stock || 0) + entry.qty;
+
+    const { error: stockErr } = await supabase
+      .from("products")
+      .update({ stock: newStock })
+      .eq("id", entry.product_id);
+    if (stockErr) return alert(stockErr.message);
+  }
+
+  const purchaseTimestamp = new Date().toISOString();
+
+  entries.forEach(entry => {
+    purchaseHistory.unshift({
+      purchased_at: purchaseTimestamp,
+      product_id: entry.product_id,
+      product_name: entry.product_name,
+      qty: Number(entry.qty || 0),
+      cost_price: Number(entry.cost_price || 0),
+      total_cost: Number(entry.cost_price || 0) * Number(entry.qty || 0)
+    });
+  });
+
+  bank = Number(bank) - totalCost;
+  byId("bank").value = money(bank);
+  const bd = byId("bankDisplay");
+  if (bd) bd.textContent = money(bank);
+  await upsertSetting("bank_total", { amount: bank });
+  await savePurchaseHistory();
+
+  purchaseCart = {};
+  await loadAllData();
+  showPurchaseNotice("Einkauf wurde gebucht und direkt von der Kasse abgezogen.");
+  showAdminNotice("Wareneinkauf erfolgreich gespeichert.");
+}
+window.submitPurchaseOrder = submitPurchaseOrder;
+
+function renderPurchaseCart(){
+  const select = byId("purchaseProductSelect");
+  if (select) {
+    const current = select.value;
+    select.innerHTML = "";
+    products
+      .slice()
+      .sort((a,b) => a.name.localeCompare(b.name, "de"))
+      .forEach(product => {
+        const option = document.createElement("option");
+        option.value = product.id;
+        option.textContent = `${product.name} ($${money(product.cost_price)} EK | Bestand: ${product.stock})`;
+        if (product.id === current) option.selected = true;
+        select.appendChild(option);
+      });
+  }
+
+  const table = byId("purchaseTable");
+  if (!table) return;
+
+  table.innerHTML = `
+    <tr><th>Artikel</th><th>Menge</th><th>EK</th><th>Summe</th><th></th></tr>
+  `;
+
+  let total = 0;
+  Object.values(purchaseCart).forEach(entry => {
+    const sum = Number(entry.cost_price || 0) * Number(entry.qty || 0);
+    total += sum;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${entry.product_name}</td>
+      <td>${entry.qty}</td>
+      <td>$${money(entry.cost_price)}</td>
+      <td>$${money(sum)}</td>
+      <td><button class="smallbtn" onclick="removePurchaseItem('${entry.product_id}')">-1</button></td>
+    `;
+    table.appendChild(row);
+  });
+
+  byId("purchaseTotal").textContent = money(total);
+}
+
+function renderPurchaseHistory(){
+  const table = byId("purchaseHistoryTable");
+  if (!table) return;
+
+  table.innerHTML = `
+    <tr><th>Datum</th><th>Artikel</th><th>Menge</th><th>EK</th><th>Gesamt</th></tr>
+  `;
+
+  if (!purchaseHistory.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="5">Noch keine Einkäufe gebucht.</td>`;
+    table.appendChild(row);
+    return;
+  }
+
+  purchaseHistory
+    .slice()
+    .sort((a, b) => new Date(b.purchased_at) - new Date(a.purchased_at))
+    .forEach(entry => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${new Date(entry.purchased_at).toLocaleString("de-DE")}</td>
+        <td>${entry.product_name}</td>
+        <td>${entry.qty}</td>
+        <td>$${money(entry.cost_price)}</td>
+        <td>$${money(entry.total_cost)}</td>
+      `;
+      table.appendChild(row);
+    });
+}
+
 
 function renderItems(){
   const wrapper = byId("itemsList");
@@ -1058,6 +1269,8 @@ function render(){
   renderCart();
   renderUsers();
   renderSalesOverview();
+  renderPurchaseCart();
+  renderPurchaseHistory();
   renderEditProducts();
   fillCategorySelectors();
   renderDeleteOptions();
