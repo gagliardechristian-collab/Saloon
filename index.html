@@ -1,3 +1,5 @@
+const SUPABASE_URL = "https://pdknntkktmghxcfvjuom.supabase.co/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBka25udGtrdG1naHhjZnZqdW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzE2OTgsImV4cCI6MjA4OTE0NzY5OH0.5AyOTZKigcOL4aaObgP7tRwoN4OSHqPsWMaW1A6VMm0";
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -34,7 +36,7 @@ input[type="number"]{width:100px;text-align:center}
 .page{display:none}
 .page.active{display:block}
 .employee-wrap{max-width:1200px;margin:0 auto}
-.employee-grid{display:grid;grid-template-columns:repeat(4,minmax(240px,1fr));gap:24px}
+.employee-grid{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:24px}
 hr{border:1px solid #6a4a2a;margin:20px 0}
 .status-ok{color:#8ed081}
 .status-bad{color:#ff9b8a}
@@ -144,30 +146,6 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
         <table id="editProductsTable"></table>
         <div class="notice">Name, Verkauf und Einkauf ändern und mit einem Klick speichern.</div>
       </div>
-    
-      <div class="panel">
-        <h2>Verwaltung</h2>
-
-        <button class="secondarybtn" onclick="testConnection()">Datenbank testen</button>
-        <button class="secondarybtn" onclick="loadAllData()">Jetzt aktualisieren</button>
-
-        <hr>
-
-        <p style="margin:8px 0 4px;">Neue Kategorie</p>
-        <input id="newCategoryName" class="full" type="text" placeholder="z. B. Snacks" style="text-align:left;">
-        <button onclick="addCategory()">Kategorie hinzufügen</button>
-
-        <p style="margin:12px 0 4px;">Neue Unterkategorie</p>
-        <select id="adminCategorySelect" class="full"></select>
-        <input id="newSubcategoryName" class="full" type="text" placeholder="z. B. Wein" style="text-align:left;margin-top:8px;">
-        <button onclick="addSubcategory()">Unterkategorie hinzufügen</button>
-
-        <hr>
-
-        <button class="dangerbtn" onclick="resetBankTotal()">Kassenstand auf 0 setzen</button>
-        <div class="notice" id="adminNotice"></div>
-      </div>
-
     </div>
   </div>
 </div>
@@ -175,8 +153,13 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
+// HIER EINFÜGEN:
 const SUPABASE_URL = "https://pdknntkktmghxcfvjuom.supabase.co/";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBka25udGtrdG1naHhjZnZqdW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzE2OTgsImV4cCI6MjA4OTE0NzY5OH0.5AyOTZKigcOL4aaObgP7tRwoN4OSHqPsWMaW1A6VMm0";
+
+if (SUPABASE_URL.includes("PASTE_") || SUPABASE_ANON_KEY.includes("PASTE_")) {
+  alert("Bitte zuerst SUPABASE_URL und SUPABASE_ANON_KEY in der HTML-Datei eintragen.");
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -186,7 +169,6 @@ let sales = [];
 let bank = 0;
 let activeEmployeeId = null;
 let cart = {};
-let customCategories = [];
 
 const byId = id => document.getElementById(id);
 const money = n => Number(n || 0).toFixed(2);
@@ -220,7 +202,6 @@ window.showPage = showPage;
 function showNotice(msg){ byId("stockNotice").textContent = msg || ""; }
 function showProductNotice(msg){ byId("productNotice").textContent = msg || ""; }
 function showUserNotice(msg){ byId("userNotice").textContent = msg || ""; }
-function showAdminNotice(msg){ const el = byId("adminNotice"); if (el) el.textContent = msg || ""; }
 
 function getActiveEmployee(){
   return employees.find(e => e.id === activeEmployeeId) || null;
@@ -232,145 +213,6 @@ function updateActiveUserBadge(){
   byId("activeUserBadge").textContent = name;
   byId("activeUserLabel").textContent = name;
 }
-
-
-function getCategoryStructure(){
-  const base = {
-    "Getränke": ["Alkoholisch", "Nicht alkoholisch"],
-    "Essen": [""]
-  };
-
-  customCategories.forEach(entry => {
-    const cat = (entry.category || "").trim();
-    const sub = typeof entry.subcategory === "string" ? entry.subcategory.trim() : "";
-    if (!cat) return;
-    if (!base[cat]) base[cat] = [];
-    if (!base[cat].includes(sub)) base[cat].push(sub);
-  });
-
-  products.forEach(product => {
-    const cat = (product.category || "").trim() || "Sonstiges";
-    const sub = typeof product.subcategory === "string" ? product.subcategory.trim() : "";
-    if (!base[cat]) base[cat] = [];
-    if (!base[cat].includes(sub)) base[cat].push(sub);
-  });
-
-  Object.keys(base).forEach(cat => {
-    base[cat] = [...new Set(base[cat])];
-  });
-  return base;
-}
-
-async function saveCustomCategories(){
-  await upsertSetting("custom_categories", { items: customCategories });
-}
-
-function fillCategorySelectors(){
-  const categoryMap = getCategoryStructure();
-  const cashCategory = byId("newCategory");
-  const cashSub = byId("newSubcategory");
-  const adminCategory = byId("adminCategorySelect");
-
-  if (cashCategory) {
-    const selected = cashCategory.value;
-    cashCategory.innerHTML = "";
-    Object.keys(categoryMap).sort().forEach(cat => {
-      const opt = document.createElement("option");
-      opt.value = cat;
-      opt.textContent = cat;
-      if (cat === selected) opt.selected = true;
-      cashCategory.appendChild(opt);
-    });
-    if (!cashCategory.value && cashCategory.options.length) cashCategory.value = cashCategory.options[0].value;
-  }
-
-  if (adminCategory) {
-    const selectedAdmin = adminCategory.value;
-    adminCategory.innerHTML = "";
-    Object.keys(categoryMap).sort().forEach(cat => {
-      const opt = document.createElement("option");
-      opt.value = cat;
-      opt.textContent = cat;
-      if (cat === selectedAdmin) opt.selected = true;
-      adminCategory.appendChild(opt);
-    });
-    if (!adminCategory.value && adminCategory.options.length) adminCategory.value = adminCategory.options[0].value;
-  }
-
-  if (cashSub) {
-    const subs = categoryMap[cashCategory.value] || [""];
-    const selectedSub = cashSub.value;
-    cashSub.innerHTML = "";
-    subs.forEach(sub => {
-      const opt = document.createElement("option");
-      opt.value = sub;
-      opt.textContent = sub || "Keine";
-      if (sub === selectedSub) opt.selected = true;
-      cashSub.appendChild(opt);
-    });
-    if (cashCategory.value === "Essen") {
-      cashSub.value = "";
-      cashSub.disabled = true;
-    } else {
-      cashSub.disabled = false;
-      if (!cashSub.value && cashSub.options.length) cashSub.value = cashSub.options[0].value;
-    }
-  }
-}
-
-async function testConnection(){
-  try {
-    const { error } = await supabase.from("products").select("id").limit(1);
-    if (error) throw error;
-    showAdminNotice("Datenbankverbindung erfolgreich.");
-  } catch (e) {
-    showAdminNotice("Fehler: " + e.message);
-  }
-}
-window.testConnection = testConnection;
-
-async function addCategory(){
-  const category = byId("newCategoryName").value.trim();
-  if (!category) return showAdminNotice("Bitte einen Kategorienamen eingeben.");
-
-  const exists = Object.keys(getCategoryStructure()).some(c => c.toLowerCase() == category.toLowerCase());
-  if (exists) return showAdminNotice("Kategorie existiert bereits.");
-
-  customCategories.push({ category, subcategory: "" });
-  await saveCustomCategories();
-  byId("newCategoryName").value = "";
-  fillCategorySelectors();
-  showAdminNotice("Kategorie hinzugefügt.");
-}
-window.addCategory = addCategory;
-
-async function addSubcategory(){
-  const category = byId("adminCategorySelect").value;
-  const subcategory = byId("newSubcategoryName").value.trim();
-  if (!category) return showAdminNotice("Bitte zuerst eine Kategorie auswählen.");
-  if (!subcategory) return showAdminNotice("Bitte einen Unterkategorienamen eingeben.");
-
-  const existingSubs = getCategoryStructure()[category] || [];
-  if (existingSubs.some(s => s.toLowerCase() === subcategory.toLowerCase())) {
-    return showAdminNotice("Unterkategorie existiert bereits.");
-  }
-
-  customCategories.push({ category, subcategory });
-  await saveCustomCategories();
-  byId("newSubcategoryName").value = "";
-  fillCategorySelectors();
-  showAdminNotice("Unterkategorie hinzugefügt.");
-}
-window.addSubcategory = addSubcategory;
-
-async function resetBankTotal(){
-  if (!confirm("Kassenstand wirklich auf 0 setzen?")) return;
-  bank = 0;
-  await upsertSetting("bank_total", { amount: 0 });
-  byId("bank").value = 0;
-  showAdminNotice("Kassenstand wurde auf 0 gesetzt.");
-}
-window.resetBankTotal = resetBankTotal;
 
 async function loadAllData(){
   const [
@@ -398,12 +240,10 @@ async function loadAllData(){
   (settingsRes.data || []).forEach(row => settings[row.key] = row.value || {});
   bank = Number(settings.bank_total?.amount || 0);
   activeEmployeeId = settings.active_employee_id?.id || null;
-  customCategories = Array.isArray(settings.custom_categories?.items) ? settings.custom_categories.items : [];
 
   byId("bank").value = bank;
   render();
 }
-window.loadAllData = loadAllData;
 
 async function upsertSetting(key, value){
   const { error } = await supabase
@@ -620,26 +460,6 @@ async function saveAll(productId){
 }
 window.saveAll = saveAll;
 
-async function deleteProduct(productId){
-  const product = products.find(p => p.id === productId);
-  if (!product) return;
-  if (!confirm("Artikel '" + product.name + "' wirklich löschen?")) return;
-
-  const hasSales = sales.some(s => s.product_id === productId);
-  if (hasSales) {
-    const { error } = await supabase.from("products").update({ active: false }).eq("id", productId);
-    if (error) return showUserNotice(error.message);
-    await loadAllData();
-    showUserNotice("Artikel wurde deaktiviert.");
-  } else {
-    const { error } = await supabase.from("products").delete().eq("id", productId);
-    if (error) return showUserNotice(error.message);
-    await loadAllData();
-    showUserNotice("Artikel wurde gelöscht.");
-  }
-}
-window.deleteProduct = deleteProduct;
-
 async function resetSales(){
   if (!confirm("Wirklich alle Umsätze löschen?")) return;
   const { error } = await supabase.from("sales").delete().neq("id", "00000000-0000-0000-0000-000000000000");
@@ -763,7 +583,7 @@ function renderEditProducts(){
       <th>Verkauf</th>
       <th>Einkauf</th>
       <th>Gewinn/Stück</th>
-      <th>Aktion</th>
+      <th></th>
     </tr>
   `;
 
@@ -776,10 +596,7 @@ function renderEditProducts(){
       <td><input class="stock-input" id="priceInput_${safeId}" type="number" min="0" step="0.01" value="${product.sale_price}"></td>
       <td><input class="stock-input" id="costInput_${safeId}" type="number" min="0" step="0.01" value="${product.cost_price}"></td>
       <td>$${money(profit)}</td>
-      <td>
-        <button class="smallbtn" onclick="saveAll('${product.id}')">Speichern</button>
-        <button class="smallbtn dangerbtn" onclick="deleteProduct('${product.id}')" style="margin-left:6px;">Löschen</button>
-      </td>
+      <td><button class="smallbtn" onclick="saveAll('${product.id}')">Speichern</button></td>
     `;
     table.appendChild(row);
   });
@@ -792,7 +609,6 @@ function render(){
   renderUsers();
   renderSummary();
   renderEditProducts();
-  fillCategorySelectors();
   updateActiveUserBadge();
 }
 
