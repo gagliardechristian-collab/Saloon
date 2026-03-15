@@ -1,959 +1,625 @@
+const SUPABASE_URL = "https://pdknntkktmghxcfvjuom.supabase.co/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBka25udGtrdG1naHhjZnZqdW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzE2OTgsImV4cCI6MjA4OTE0NzY5OH0.5AyOTZKigcOL4aaObgP7tRwoN4OSHqPsWMaW1A6VMm0";
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Saloon ERP</title>
+<title>Saloon ERP – Supabase</title>
 <style>
-body{
-    font-family: Arial, sans-serif;
-    background:#2b1d0e;
-    color:#f5e6c8;
-    margin:0;
-    padding:20px;
-}
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:16px;
-    margin-bottom:20px;
-    flex-wrap:wrap;
-}
-h1{
-    margin:0;
-}
-.top-actions{
-    display:flex;
-    gap:10px;
-    align-items:center;
-    flex-wrap:wrap;
-}
-.container{
-    display:grid;
-    grid-template-columns: repeat(4, minmax(260px, 340px));
-    justify-content:center;
-    gap:24px;
-    align-items:start;
-}
-.panel{
-    background:#3a2715;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.2);
-}
-button{
-    width:100%;
-    padding:10px;
-    margin:5px 0;
-    font-size:15px;
-    cursor:pointer;
-    border:none;
-    border-radius:8px;
-}
-button:disabled{
-    cursor:not-allowed;
-    opacity:0.55;
-}
-.smallbtn{
-    padding:4px 8px;
-    font-size:12px;
-    width:auto;
-    margin:0;
-}
-.topbtn{
-    width:auto;
-    padding:10px 14px;
-    background:#d7a85b;
-    color:#2b1d0e;
-    font-weight:bold;
-}
-.secondarybtn{
-    width:auto;
-    padding:10px 14px;
-    background:#5a3b1f;
-    color:#f5e6c8;
-}
-table{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:8px;
-}
-th,td{
-    padding:6px;
-    border-bottom:1px solid #6a4a2a;
-    text-align:left;
-}
-.total{
-    font-size:20px;
-    margin-top:10px;
-}
-input, select{
-    padding:6px;
-    font-size:16px;
-    border-radius:6px;
-    border:none;
-    box-sizing:border-box;
-}
-input[type="number"]{
-    width:100px;
-    text-align:center;
-}
-.full{
-    width:100%;
-}
-.stock-input{
-    width:70px;
-    font-size:14px;
-    padding:4px;
-}
-.name-input{
-    width:140px;
-    font-size:14px;
-    padding:4px;
-    text-align:left;
-}
-.badge{
-    display:inline-block;
-    padding:4px 8px;
-    border-radius:999px;
-    background:#5a3b1f;
-    font-size:12px;
-    margin-bottom:8px;
-}
-.notice{
-    margin-top:12px;
-    min-height:20px;
-    font-size:14px;
-    color:#ffd37a;
-}
-.info-box{
-    padding:8px 12px;
-    border-radius:10px;
-    background:#5a3b1f;
-    font-size:14px;
-}
-.item-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-    gap:6px;
-    margin-bottom:10px;
-}
-.item-grid button{
-    min-height:48px;
-}
-.section-gap{
-    margin-top:16px;
-}
-.page{
-    display:none;
-}
-.page.active{
-    display:block;
-}
-.employee-wrap{
-    max-width:900px;
-    margin:0 auto;
-}
-.employee-grid{
-    display:grid;
-    grid-template-columns:repeat(3, minmax(250px, 1fr));
-    gap:24px;
-}
-hr{
-    border:1px solid #6a4a2a;
-    margin:20px 0;
-}
-@media (max-width: 1450px){
-    .container{
-        grid-template-columns: repeat(2, minmax(260px, 340px));
-    }
-}
-@media (max-width: 760px){
-    .container, .employee-grid{
-        grid-template-columns: 1fr;
-    }
-}
+body{font-family:Arial,sans-serif;background:#2b1d0e;color:#f5e6c8;margin:0;padding:20px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+h1{margin:0}
+.top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.container{display:grid;grid-template-columns:repeat(4,minmax(260px,340px));justify-content:center;gap:24px;align-items:start}
+.panel{background:#3a2715;padding:20px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.2)}
+button{width:100%;padding:10px;margin:5px 0;font-size:15px;cursor:pointer;border:none;border-radius:8px}
+button:disabled{cursor:not-allowed;opacity:.55}
+.smallbtn{padding:4px 8px;font-size:12px;width:auto;margin:0}
+.topbtn{width:auto;padding:10px 14px;background:#d7a85b;color:#2b1d0e;font-weight:bold}
+.secondarybtn{width:auto;padding:10px 14px;background:#5a3b1f;color:#f5e6c8}
+.dangerbtn{background:#b54a3a;color:#fff}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{padding:6px;border-bottom:1px solid #6a4a2a;text-align:left;vertical-align:top}
+.total{font-size:20px;margin-top:10px}
+input,select{padding:6px;font-size:16px;border-radius:6px;border:none;box-sizing:border-box}
+input[type="number"]{width:100px;text-align:center}
+.full{width:100%}
+.stock-input{width:70px;font-size:14px;padding:4px}
+.name-input{width:140px;font-size:14px;padding:4px;text-align:left}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#5a3b1f;font-size:12px;margin-bottom:8px}
+.notice{margin-top:12px;min-height:20px;font-size:14px;color:#ffd37a}
+.info-box{padding:8px 12px;border-radius:10px;background:#5a3b1f;font-size:14px}
+.item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:10px}
+.item-grid button{min-height:48px}
+.section-gap{margin-top:16px}
+.page{display:none}
+.page.active{display:block}
+.employee-wrap{max-width:1200px;margin:0 auto}
+.employee-grid{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:24px}
+hr{border:1px solid #6a4a2a;margin:20px 0}
+.status-ok{color:#8ed081}
+.status-bad{color:#ff9b8a}
+@media (max-width:1450px){.container{grid-template-columns:repeat(2,minmax(260px,340px))}}
+@media (max-width:980px){.employee-grid{grid-template-columns:1fr}}
+@media (max-width:760px){.container{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <div class="topbar">
-    <h1>🤠 Saloon Management System</h1>
-    <div class="top-actions">
-        <div class="info-box">Eingeloggt: <strong id="activeUserBadge">Niemand</strong></div>
-        <button class="topbtn" id="employeePageBtn" onclick="showPage('employee')">Mitarbeiter Login</button>
-        <button class="secondarybtn" id="cashPageBtn" onclick="showPage('cash')" style="display:none;">Zurück zur Kasse</button>
-    </div>
+  <h1>🤠 Saloon Management System</h1>
+  <div class="top-actions">
+    <div class="info-box">Eingeloggt: <strong id="activeUserBadge">Niemand</strong></div>
+    <button class="topbtn" id="employeePageBtn" onclick="showPage('employee')">Mitarbeiter Login</button>
+    <button class="secondarybtn" id="cashPageBtn" onclick="showPage('cash')" style="display:none;">Zurück zur Kasse</button>
+  </div>
 </div>
 
 <div id="cashPage" class="page active">
-    <div class="container">
-        <div class="panel">
-            <h2>Artikel</h2>
-            <div id="itemsList"></div>
-            <div class="notice" id="stockNotice"></div>
-        </div>
-
-        <div class="panel">
-            <h2>Verkäufe</h2>
-            <table id="cartTable">
-                <tr>
-                    <th>Artikel</th>
-                    <th>Menge</th>
-                    <th>Person</th>
-                    <th>Preis</th>
-                    <th></th>
-                </tr>
-            </table>
-
-            <div class="total">
-                Session Umsatz: $<span id="sessionTotal">0.00</span>
-            </div>
-
-            <button onclick="clearSession()">Session löschen</button>
-        </div>
-
-        <div class="panel">
-            <h2>Lagerbestand</h2>
-            <table id="stockTable">
-                <tr>
-                    <th>Artikel</th>
-                    <th>Bestand</th>
-                    <th>Speichern</th>
-                </tr>
-            </table>
-            <div class="notice">Beim Hinzufügen eines Artikels wird der Bestand automatisch vom Lager abgezogen.</div>
-        </div>
-
-        <div class="panel">
-            <h2>Gesamte Kasse</h2>
-
-            <p>Aktuelles Saloon Geld</p>
-            <input type="number" id="bank" onchange="saveBank()">
-
-            <p style="margin-top:15px;">Session zur Kasse addieren</p>
-            <button onclick="addSessionToBank()">Umsatz übertragen</button>
-
-            <hr>
-            <h3 style="margin-top:0;">Artikel hinzufügen</h3>
-
-            <p style="margin:8px 0 4px;">Name</p>
-            <input id="newName" class="full" type="text" style="text-align:left;">
-
-            <p style="margin:8px 0 4px;">Preis</p>
-            <input id="newPrice" type="number" min="0" step="0.01">
-
-            <p style="margin:8px 0 4px;">Startbestand</p>
-            <input id="newStock" type="number" min="0" step="1">
-
-            <p style="margin:8px 0 4px;">Kategorie</p>
-            <select id="newCategory" class="full">
-                <option value="Getränke">Getränke</option>
-                <option value="Essen">Essen</option>
-            </select>
-
-            <p style="margin:8px 0 4px;">Unterkategorie</p>
-            <select id="newSubcategory" class="full">
-                <option value="Alkoholisch">Alkoholisch</option>
-                <option value="Nicht alkoholisch">Nicht alkoholisch</option>
-                <option value="">Keine</option>
-            </select>
-
-            <button onclick="addNewProduct()" style="margin-top:12px;">Artikel hinzufügen</button>
-            <div class="notice" id="productNotice"></div>
-        </div>
+  <div class="container">
+    <div class="panel">
+      <h2>Artikel</h2>
+      <div id="itemsList"></div>
+      <div class="notice" id="stockNotice"></div>
     </div>
+
+    <div class="panel">
+      <h2>Verkäufe</h2>
+      <table id="cartTable"></table>
+      <div class="total">Session Umsatz: $<span id="sessionTotal">0.00</span></div>
+      <button onclick="clearSession()">Session löschen</button>
+    </div>
+
+    <div class="panel">
+      <h2>Lagerbestand</h2>
+      <table id="stockTable"></table>
+      <div class="notice">Lager wird bei „Umsatz übertragen“ zentral in der Datenbank reduziert.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Gesamte Kasse</h2>
+      <p>Aktuelles Saloon Geld</p>
+      <input type="number" id="bank" onchange="saveBank()">
+      <p style="margin-top:15px;">Session zur Kasse addieren</p>
+      <button onclick="addSessionToBank()">Umsatz übertragen</button>
+
+      <hr>
+      <h3 style="margin-top:0;">Artikel hinzufügen</h3>
+      <p style="margin:8px 0 4px;">Name</p>
+      <input id="newName" class="full" type="text" style="text-align:left;">
+      <p style="margin:8px 0 4px;">Verkaufspreis</p>
+      <input id="newPrice" type="number" min="0" step="0.01">
+      <p style="margin:8px 0 4px;">Einkaufspreis</p>
+      <input id="newCost" type="number" min="0" step="0.01">
+      <p style="margin:8px 0 4px;">Startbestand</p>
+      <input id="newStock" type="number" min="0" step="1">
+      <p style="margin:8px 0 4px;">Kategorie</p>
+      <select id="newCategory" class="full">
+        <option value="Getränke">Getränke</option>
+        <option value="Essen">Essen</option>
+      </select>
+      <p style="margin:8px 0 4px;">Unterkategorie</p>
+      <select id="newSubcategory" class="full">
+        <option value="Alkoholisch">Alkoholisch</option>
+        <option value="Nicht alkoholisch">Nicht alkoholisch</option>
+        <option value="">Keine</option>
+      </select>
+      <button onclick="addNewProduct()" style="margin-top:12px;">Artikel hinzufügen</button>
+      <div class="notice" id="productNotice"></div>
+    </div>
+  </div>
 </div>
 
 <div id="employeePage" class="page">
-    <div class="employee-wrap">
-        <div class="employee-grid">
-            <div class="panel">
-                <h2>Mitarbeiter Login</h2>
-
-                <p style="margin:8px 0 4px;">Neuen Mitarbeiter anlegen</p>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <input id="newUserName" type="text" placeholder="Name eingeben" style="flex:1; min-width:180px; text-align:left;">
-                    <button onclick="addUser()" class="topbtn">Hinzufügen</button>
-<button onclick="deleteUser()" class="secondarybtn">Löschen</button>
-                </div>
-
-                <div class="section-gap">
-                    <p style="margin:8px 0 4px;">Mitarbeiter auswählen</p>
-                    <select id="activeUserSelect" class="full"></select>
-                    <button onclick="setActiveUser()" style="margin-top:10px;">Einloggen</button>
-                </div>
-
-                <div class="section-gap info-box">
-                    Aktiver Mitarbeiter: <strong id="activeUserLabel">Niemand</strong>
-                </div>
-
-                <div class="notice" id="userNotice"></div>
-            </div>
-
-            <div class="panel">
-                <h2>Umsatz pro Mitarbeiter</h2>
-                <table id="userSalesTable">
-                    <tr>
-                        <th>Mitarbeiter</th>
-                        <th>Umsatz</th>
-                        <th>Reingewinn</th>
-                    </tr>
-                </table>
-
-<button onclick="resetEmployeeSales()" style="margin-top:12px;background:#b54a3a;">Alle Umsätze löschen</button>
-
-<div class="notice">Hier siehst du den Umsatz und Reingewinn je Mitarbeiter nach dem Klick auf „Umsatz übertragen“.</div>
-            </div>
-
-            <div class="panel">
-                <h2>Einkaufspreise</h2>
-                <table id="costTable">
-                    <tr>
-                        <th>Artikel</th>
-                        <th>Verkauf (änderbar)</th>
-                        <th>Einkauf</th>
-                        <th>Gewinn/Stück</th>
-                        <th></th>
-                    </tr>
-                </table>
-                <div class="notice">Hier kannst du auf der zweiten Seite den Einkaufspreis pro Artikel eintragen.</div>
-            </div>
+  <div class="employee-wrap">
+    <div class="employee-grid">
+      <div class="panel">
+        <h2>Mitarbeiter Login</h2>
+        <p style="margin:8px 0 4px;">Neuen Mitarbeiter anlegen</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input id="newUserName" type="text" placeholder="Name eingeben" style="flex:1;min-width:180px;text-align:left;">
+          <button onclick="addUser()" class="topbtn">Hinzufügen</button>
+          <button onclick="deleteUser()" class="secondarybtn">Löschen</button>
         </div>
+
+        <div class="section-gap">
+          <p style="margin:8px 0 4px;">Mitarbeiter auswählen</p>
+          <select id="activeUserSelect" class="full"></select>
+          <button onclick="setActiveUser()" style="margin-top:10px;">Einloggen</button>
+        </div>
+
+        <div class="section-gap info-box">
+          Aktiver Mitarbeiter: <strong id="activeUserLabel">Niemand</strong>
+        </div>
+        <div class="notice" id="userNotice"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Gesamt Umsatz & Gewinn</h2>
+        <table id="summaryTable"></table>
+        <button onclick="resetSales()" class="dangerbtn" style="margin-top:12px;">Alle Umsätze löschen</button>
+        <div class="notice">Löscht alle Buchungen in der Datenbank und setzt Umsatz/Gewinn auf 0.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Artikel bearbeiten</h2>
+        <table id="editProductsTable"></table>
+        <div class="notice">Name, Verkauf und Einkauf ändern und mit einem Klick speichern.</div>
+      </div>
     </div>
+  </div>
 </div>
 
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-<script>
-const defaultProducts = {
-    'Whiskey': { price: 5, cost: 2, stock: 20, category: 'Getränke', subcategory: 'Alkoholisch' },
-    'Bier': { price: 3, cost: 1, stock: 30, category: 'Getränke', subcategory: 'Alkoholisch' },
-    'Wasser': { price: 2, cost: 0.5, stock: 25, category: 'Getränke', subcategory: 'Nicht alkoholisch' },
-    'Kaffee': { price: 4, cost: 1.2, stock: 18, category: 'Getränke', subcategory: 'Nicht alkoholisch' },
-    'Steak': { price: 8, cost: 4, stock: 15, category: 'Essen', subcategory: '' },
-    'Brot': { price: 2, cost: 0.8, stock: 25, category: 'Essen', subcategory: '' }
-};
+// HIER EINFÜGEN:
+const SUPABASE_URL = "https://pdknntkktmghxcfvjuom.supabase.co/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBka25udGtrdG1naHhjZnZqdW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzE2OTgsImV4cCI6MjA4OTE0NzY5OH0.5AyOTZKigcOL4aaObgP7tRwoN4OSHqPsWMaW1A6VMm0";
 
-let products = JSON.parse(localStorage.getItem("products")) || defaultProducts;
-let cart = JSON.parse(localStorage.getItem("cart")) || {};
-let bank = parseFloat(localStorage.getItem("bank")) || 0;
-let stock = JSON.parse(localStorage.getItem("stock")) || {};
-let users = JSON.parse(localStorage.getItem("users")) || ["Admin"];
-let activeUser = localStorage.getItem("activeUser") || users[0] || "";
-let userSales = JSON.parse(localStorage.getItem("userSales")) || {};
-let userProfit = JSON.parse(localStorage.getItem("userProfit")) || {};
-
-for (let item in products) {
-    if (stock[item] === undefined || stock[item] === null || isNaN(stock[item])) {
-        stock[item] = products[item].stock;
-    }
-    if (products[item].cost === undefined || isNaN(products[item].cost)) {
-        products[item].cost = 0;
-    }
+if (SUPABASE_URL.includes("PASTE_") || SUPABASE_ANON_KEY.includes("PASTE_")) {
+  alert("Bitte zuerst SUPABASE_URL und SUPABASE_ANON_KEY in der HTML-Datei eintragen.");
 }
 
-users.forEach(user => {
-    if (userSales[user] === undefined || isNaN(userSales[user])) userSales[user] = 0;
-    if (userProfit[user] === undefined || isNaN(userProfit[user])) userProfit[user] = 0;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let products = [];
+let employees = [];
+let sales = [];
+let bank = 0;
+let activeEmployeeId = null;
+let cart = {};
+
+const byId = id => document.getElementById(id);
+const money = n => Number(n || 0).toFixed(2);
+
+byId("newCategory").addEventListener("change", function(){
+  const sub = byId("newSubcategory");
+  if (this.value === "Essen") {
+    sub.value = "";
+    sub.disabled = true;
+  } else {
+    sub.disabled = false;
+  }
 });
-
-document.getElementById("bank").value = bank;
-
-document.getElementById("newCategory").addEventListener("change", function(){
-    const sub = document.getElementById("newSubcategory");
-    if(this.value === "Essen"){
-        sub.value = "";
-        sub.disabled = true;
-    } else {
-        sub.disabled = false;
-    }
-});
-
-function saveCart(){ localStorage.setItem("cart", JSON.stringify(cart)); }
-function saveBank(){
-    bank = parseFloat(document.getElementById("bank").value) || 0;
-    localStorage.setItem("bank", bank);
-}
-function saveStock(){ localStorage.setItem("stock", JSON.stringify(stock)); }
-function saveProducts(){ localStorage.setItem("products", JSON.stringify(products)); }
-function saveUsers(){ localStorage.setItem("users", JSON.stringify(users)); }
-function saveUserSales(){ localStorage.setItem("userSales", JSON.stringify(userSales)); }
-function saveUserProfit(){ localStorage.setItem("userProfit", JSON.stringify(userProfit)); }
-function saveActiveUser(){ localStorage.setItem("activeUser", activeUser || ""); }
-
-function showNotice(message){ document.getElementById("stockNotice").textContent = message || ""; }
-function showProductNotice(message){ document.getElementById("productNotice").textContent = message || ""; }
-function showUserNotice(message){ document.getElementById("userNotice").textContent = message || ""; }
 
 function showPage(page){
-    document.getElementById("cashPage").classList.remove("active");
-    document.getElementById("employeePage").classList.remove("active");
+  byId("cashPage").classList.remove("active");
+  byId("employeePage").classList.remove("active");
 
-    if(page === "employee"){
-        document.getElementById("employeePage").classList.add("active");
-        document.getElementById("employeePageBtn").style.display = "none";
-        document.getElementById("cashPageBtn").style.display = "inline-block";
-        renderUsers();
-        renderCostTable();
-    }else{
-        document.getElementById("cashPage").classList.add("active");
-        document.getElementById("employeePageBtn").style.display = "inline-block";
-        document.getElementById("cashPageBtn").style.display = "none";
-    }
+  if(page === "employee"){
+    byId("employeePage").classList.add("active");
+    byId("employeePageBtn").style.display = "none";
+    byId("cashPageBtn").style.display = "inline-block";
+  } else {
+    byId("cashPage").classList.add("active");
+    byId("employeePageBtn").style.display = "inline-block";
+    byId("cashPageBtn").style.display = "none";
+  }
+}
+
+function showNotice(msg){ byId("stockNotice").textContent = msg || ""; }
+function showProductNotice(msg){ byId("productNotice").textContent = msg || ""; }
+function showUserNotice(msg){ byId("userNotice").textContent = msg || ""; }
+
+function getActiveEmployee(){
+  return employees.find(e => e.id === activeEmployeeId) || null;
 }
 
 function updateActiveUserBadge(){
-    const name = activeUser || "Niemand";
-    document.getElementById("activeUserBadge").textContent = name;
-    document.getElementById("activeUserLabel").textContent = name;
+  const active = getActiveEmployee();
+  const name = active ? active.name : "Niemand";
+  byId("activeUserBadge").textContent = name;
+  byId("activeUserLabel").textContent = name;
 }
 
+async function loadAllData(){
+  const [
+    productsRes,
+    employeesRes,
+    salesRes,
+    settingsRes
+  ] = await Promise.all([
+    supabase.from("products").select("*").eq("active", true).order("category").order("subcategory").order("name"),
+    supabase.from("employees").select("*").eq("active", true).order("name"),
+    supabase.from("sales").select("*").order("created_at", { ascending: false }),
+    supabase.from("settings").select("*")
+  ]);
 
-function deleteUser(){
-    const select = document.getElementById("activeUserSelect");
-    const user = select ? select.value : "";
+  if (productsRes.error) throw productsRes.error;
+  if (employeesRes.error) throw employeesRes.error;
+  if (salesRes.error) throw salesRes.error;
+  if (settingsRes.error) throw settingsRes.error;
 
-    if(!user){
-        showUserNotice("Bitte zuerst einen Mitarbeiter auswählen.");
-        return;
-    }
+  products = productsRes.data || [];
+  employees = employeesRes.data || [];
+  sales = salesRes.data || [];
 
-    if(!confirm("Mitarbeiter '" + user + "' wirklich löschen?")) return;
+  const settings = {};
+  (settingsRes.data || []).forEach(row => settings[row.key] = row.value || {});
+  bank = Number(settings.bank_total?.amount || 0);
+  activeEmployeeId = settings.active_employee_id?.id || null;
 
-    users = users.filter(u => u !== user);
-
-    delete userSales[user];
-    if(typeof userProfit !== "undefined"){
-        delete userProfit[user];
-    }
-
-    if(activeUser === user){
-        activeUser = users[0] || "";
-        saveActiveUser();
-    }
-
-    saveUsers();
-    saveUserSales();
-    if(typeof saveUserProfit === "function") saveUserProfit();
-
-    renderUsers();
-    showUserNotice("Mitarbeiter " + user + " wurde gelöscht.");
-}
-function addUser(){
-    const input = document.getElementById("newUserName");
-    const name = input.value.trim();
-
-    if(!name){
-        showUserNotice("Bitte einen Namen eingeben.");
-        return;
-    }
-
-    if(users.includes(name)){
-        showUserNotice("Dieser Mitarbeiter existiert bereits.");
-        return;
-    }
-
-    users.push(name);
-    userSales[name] = 0;
-    userProfit[name] = 0;
-    saveUsers();
-    saveUserSales();
-    saveUserProfit();
-    input.value = "";
-    showUserNotice(name + " wurde hinzugefügt.");
-    renderUsers();
+  byId("bank").value = bank;
+  render();
 }
 
-function setActiveUser(){
-    const selected = document.getElementById("activeUserSelect").value;
-    activeUser = selected;
-    saveActiveUser();
-    updateActiveUserBadge();
-    showUserNotice(selected + " ist jetzt eingeloggt.");
-    renderUsers();
-    renderCart();
+async function upsertSetting(key, value){
+  const { error } = await supabase
+    .from("settings")
+    .upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) throw error;
 }
 
-function addNewProduct(){
-    const name = document.getElementById("newName").value.trim();
-    const price = parseFloat(document.getElementById("newPrice").value);
-    const startStock = Math.max(0, parseInt(document.getElementById("newStock").value) || 0);
-    const category = document.getElementById("newCategory").value;
-    const subcategory = document.getElementById("newSubcategory").value;
+async function saveBank(){
+  try {
+    bank = Number(byId("bank").value || 0);
+    await upsertSetting("bank_total", { amount: bank });
+    showNotice("Kassenstand gespeichert.");
+  } catch (e) {
+    alert("Fehler beim Speichern der Kasse: " + e.message);
+  }
+}
+window.saveBank = saveBank;
 
-    if(!name){
-        showProductNotice("Bitte einen Artikelnamen eingeben.");
-        return;
-    }
+async function addUser(){
+  const name = byId("newUserName").value.trim();
+  if (!name) return showUserNotice("Bitte einen Namen eingeben.");
+  if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+    return showUserNotice("Dieser Mitarbeiter existiert bereits.");
+  }
 
-    if(isNaN(price) || price < 0){
-        showProductNotice("Bitte einen gültigen Preis eingeben.");
-        return;
-    }
+  const { error } = await supabase.from("employees").insert({ name });
+  if (error) return showUserNotice(error.message);
 
-    if(products[name]){
-        showProductNotice("Dieser Artikel existiert bereits.");
-        return;
-    }
+  byId("newUserName").value = "";
+  await loadAllData();
+  showUserNotice(name + " wurde hinzugefügt.");
+}
+window.addUser = addUser;
 
-    const finalSubcategory = category === "Essen" ? "" : subcategory;
+async function deleteUser(){
+  const userId = byId("activeUserSelect").value;
+  const employee = employees.find(e => e.id === userId);
+  if (!employee) return showUserNotice("Bitte zuerst einen Mitarbeiter auswählen.");
+  if (!confirm("Mitarbeiter '" + employee.name + "' wirklich löschen?")) return;
 
-    products[name] = {
-        price: price,
-        cost: 0,
-        stock: startStock,
-        category: category,
-        subcategory: finalSubcategory
+  const { error } = await supabase.from("employees").update({ active: false }).eq("id", userId);
+  if (error) return showUserNotice(error.message);
+
+  if (activeEmployeeId === userId) {
+    activeEmployeeId = null;
+    await upsertSetting("active_employee_id", { id: null });
+  }
+
+  await loadAllData();
+  showUserNotice(employee.name + " wurde gelöscht.");
+}
+window.deleteUser = deleteUser;
+
+async function setActiveUser(){
+  const userId = byId("activeUserSelect").value || null;
+  await upsertSetting("active_employee_id", { id: userId });
+  activeEmployeeId = userId;
+  updateActiveUserBadge();
+  renderCart();
+  showUserNotice("Mitarbeiter eingeloggt.");
+}
+window.setActiveUser = setActiveUser;
+
+async function addNewProduct(){
+  const name = byId("newName").value.trim();
+  const sale_price = Number(byId("newPrice").value || 0);
+  const cost_price = Number(byId("newCost").value || 0);
+  const stock = Number(byId("newStock").value || 0);
+  const category = byId("newCategory").value;
+  const subcategory = category === "Essen" ? "" : byId("newSubcategory").value;
+
+  if (!name) return showProductNotice("Bitte einen Artikelnamen eingeben.");
+  if (products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    return showProductNotice("Dieser Artikel existiert bereits.");
+  }
+
+  const { error } = await supabase.from("products").insert({
+    name, sale_price, cost_price, stock, category, subcategory, active: true
+  });
+  if (error) return showProductNotice(error.message);
+
+  byId("newName").value = "";
+  byId("newPrice").value = "";
+  byId("newCost").value = "";
+  byId("newStock").value = "";
+  await loadAllData();
+  showProductNotice(name + " wurde hinzugefügt.");
+}
+window.addNewProduct = addNewProduct;
+
+function addItem(productId){
+  const active = getActiveEmployee();
+  if (!active) return showUserNotice("Bitte zuerst einen Mitarbeiter einloggen.");
+
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+  if (Number(product.stock) <= 0) return showNotice(product.name + " ist nicht mehr auf Lager.");
+
+  const key = product.id + "||" + active.id;
+  if (!cart[key]) {
+    cart[key] = {
+      product_id: product.id,
+      product_name: product.name,
+      employee_id: active.id,
+      employee_name: active.name,
+      qty: 0,
+      sale_price: Number(product.sale_price || 0),
+      cost_price: Number(product.cost_price || 0)
     };
-
-    stock[name] = startStock;
-
-    saveProducts();
-    saveStock();
-
-    document.getElementById("newName").value = "";
-    document.getElementById("newPrice").value = "";
-    document.getElementById("newStock").value = "";
-    showProductNotice(name + " wurde hinzugefügt.");
-    showNotice("Neuer Artikel wurde im System gespeichert.");
-    render();
-}
-
-function addItem(name, price){
-    if (!activeUser) {
-        showUserNotice("Bitte zuerst einen Mitarbeiter einloggen.");
-        return;
-    }
-
-    if ((stock[name] || 0) <= 0) {
-        showNotice(name + " ist nicht mehr auf Lager.");
-        render();
-        return;
-    }
-
-    const key = name + "||" + activeUser;
-
-    if(cart[key]){
-        cart[key].qty++;
-    }else{
-        cart[key] = { name:name, price:price, qty:1, user:activeUser };
-    }
-
-    stock[name]--;
-    saveCart();
-    saveStock();
-    showNotice(name + " wurde verkauft. Lager -1");
-    render();
+  }
+  cart[key].qty += 1;
+  renderCart();
+  showNotice(product.name + " zur Session hinzugefügt.");
 }
 
 function removeItem(key){
-    if(!cart[key]) return;
-
-    const itemName = cart[key].name;
-    cart[key].qty--;
-    stock[itemName] = (stock[itemName] || 0) + 1;
-
-    if(cart[key].qty <= 0){
-        delete cart[key];
-    }
-
-    saveCart();
-    saveStock();
-    showNotice(itemName + " wurde zurück in das Lager gelegt.");
-    render();
+  if (!cart[key]) return;
+  cart[key].qty -= 1;
+  if (cart[key].qty <= 0) delete cart[key];
+  renderCart();
 }
+window.removeItem = removeItem;
 
 function clearSession(){
-    if(confirm("Session wirklich löschen?")){
-        for(let key in cart){
-            const itemName = cart[key].name;
-            stock[itemName] = (stock[itemName] || 0) + cart[key].qty;
-        }
-        cart = {};
-        saveCart();
-        saveStock();
-        showNotice("Session gelöscht. Artikel wurden zurück ins Lager gebucht.");
-        render();
-    }
+  cart = {};
+  renderCart();
+  showNotice("Session gelöscht.");
 }
+window.clearSession = clearSession;
 
-function addSessionToBank(){
-    let total = 0;
+async function addSessionToBank(){
+  const entries = Object.values(cart);
+  if (!entries.length) return showNotice("Keine Artikel in der Session.");
 
-    for(let key in cart){
-        const entry = cart[key];
-        const lineTotal = entry.qty * entry.price;
-        const itemCost = parseFloat(products[entry.name]?.cost) || 0;
-        const lineProfit = lineTotal - (entry.qty * itemCost);
+  // aktuelle Lagerstände laden
+  const ids = entries.map(e => e.product_id);
+  const { data: liveProducts, error: pErr } = await supabase.from("products").select("*").in("id", ids);
+  if (pErr) return alert(pErr.message);
 
-        total += lineTotal;
-        userSales[entry.user] = (userSales[entry.user] || 0) + lineTotal;
-        userProfit[entry.user] = (userProfit[entry.user] || 0) + lineProfit;
+  const liveMap = Object.fromEntries((liveProducts || []).map(p => [p.id, p]));
+  for (const entry of entries) {
+    const p = liveMap[entry.product_id];
+    if (!p) return alert("Artikel nicht gefunden: " + entry.product_name);
+    if (Number(p.stock) < entry.qty) {
+      return alert("Zu wenig Lagerbestand für " + p.name + ". Verfügbar: " + p.stock);
     }
+  }
 
-    bank += total;
-    document.getElementById("bank").value = bank;
-    localStorage.setItem("bank", bank);
-    saveUserSales();
-    saveUserProfit();
+  for (const entry of entries) {
+    const p = liveMap[entry.product_id];
+    const newStock = Number(p.stock) - entry.qty;
 
-    cart = {};
-    saveCart();
-    showNotice("Umsatz wurde übertragen. Lager bleibt reduziert.");
-    showUserNotice("Umsatz und Reingewinn pro Mitarbeiter wurden aktualisiert.");
-    render();
+    const { error: stockErr } = await supabase
+      .from("products")
+      .update({ stock: newStock })
+      .eq("id", entry.product_id);
+    if (stockErr) return alert(stockErr.message);
+
+    const { error: salesErr } = await supabase.from("sales").insert({
+      product_id: entry.product_id,
+      employee_id: entry.employee_id,
+      product_name: p.name,
+      employee_name: entry.employee_name,
+      qty: entry.qty,
+      sale_price: Number(p.sale_price || 0),
+      cost_price: Number(p.cost_price || 0)
+    });
+    if (salesErr) return alert(salesErr.message);
+  }
+
+  const total = entries.reduce((sum, e) => sum + e.qty * e.sale_price, 0);
+  bank += total;
+  await upsertSetting("bank_total", { amount: bank });
+
+  cart = {};
+  await loadAllData();
+  showNotice("Umsatz wurde übertragen.");
+  showUserNotice("Verkäufe wurden in die gemeinsame Datenbank gespeichert.");
 }
+window.addSessionToBank = addSessionToBank;
 
-function updateStock(name){
-    const input = document.getElementById("stockInput_" + name);
-    const value = Math.max(0, parseInt(input.value) || 0);
-    stock[name] = value;
-    saveStock();
-    showNotice("Lagerbestand für " + name + " gespeichert.");
-    render();
+async function updateStock(productId){
+  const input = byId("stockInput_" + productId);
+  const stock = Math.max(0, Number(input.value || 0));
+  const { error } = await supabase.from("products").update({ stock }).eq("id", productId);
+  if (error) return alert(error.message);
+  await loadAllData();
+  showNotice("Lagerbestand gespeichert.");
 }
+window.updateStock = updateStock;
 
+async function saveAll(productId){
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
 
+  const safeId = encodeURIComponent(productId);
+  const newName = byId("nameInput_" + safeId).value.trim();
+  const sale_price = Math.max(0, Number(byId("priceInput_" + safeId).value || 0));
+  const cost_price = Math.max(0, Number(byId("costInput_" + safeId).value || 0));
 
+  if (!newName) return showUserNotice("Bitte einen Artikelnamen eingeben.");
+  const conflict = products.find(p => p.id !== productId && p.name.toLowerCase() === newName.toLowerCase());
+  if (conflict) return showUserNotice("Ein Artikel mit diesem Namen existiert bereits.");
 
+  const { error } = await supabase
+    .from("products")
+    .update({ name: newName, sale_price, cost_price })
+    .eq("id", productId);
+  if (error) return showUserNotice(error.message);
 
-function saveAll(oldName){
-    const safe = encodeURIComponent(oldName);
-    const nameInput = document.getElementById("nameInput_" + safe);
-    const priceInput = document.getElementById("priceInput_" + oldName);
-    const costInput = document.getElementById("costInput_" + oldName);
-
-    const newName = nameInput ? nameInput.value.trim() : oldName;
-    const price = Math.max(0, parseFloat(priceInput?.value) || 0);
-    const cost = Math.max(0, parseFloat(costInput?.value) || 0);
-
-    // rename if needed
-    let finalName = oldName;
-
-    if(newName && newName !== oldName){
-        if(products[newName]){
-            showUserNotice("Artikelname existiert bereits.");
-            return;
-        }
-
-        products[newName] = { ...products[oldName] };
-        delete products[oldName];
-
-        if(stock[oldName] !== undefined){
-            stock[newName] = stock[oldName];
-            delete stock[oldName];
-        }
-
-        const newCart = {};
-        for(let key in cart){
-            const entry = cart[key];
-            const entryName = entry.name === oldName ? newName : entry.name;
-            const entryUser = entry.user;
-            const newKey = entryName + "||" + entryUser;
-            newCart[newKey] = { ...entry, name: entryName };
-        }
-        cart = newCart;
-
-        finalName = newName;
-    }
-
-    products[finalName].price = price;
-    products[finalName].cost = cost;
-
-    saveProducts();
-    saveStock();
-    saveCart();
-
-    render();
-    showUserNotice("Artikel gespeichert.");
+  await loadAllData();
+  showUserNotice("Artikel gespeichert.");
 }
-function renameProduct(oldName){
-    const input = document.getElementById("nameInput_" + encodeURIComponent(oldName));
-    if(!input) return;
+window.saveAll = saveAll;
 
-    const newName = input.value.trim();
-
-    if(!newName){
-        showUserNotice("Bitte einen neuen Artikelnamen eingeben.");
-        return;
-    }
-
-    if(newName === oldName){
-        showUserNotice("Der Artikelname wurde nicht geändert.");
-        return;
-    }
-
-    if(products[newName]){
-        showUserNotice("Ein Artikel mit diesem Namen existiert bereits.");
-        return;
-    }
-
-    products[newName] = { ...products[oldName] };
-    delete products[oldName];
-
-    if(stock[oldName] !== undefined){
-        stock[newName] = stock[oldName];
-        delete stock[oldName];
-    }
-
-    const newCart = {};
-    for(let key in cart){
-        const entry = cart[key];
-        const entryName = entry.name === oldName ? newName : entry.name;
-        const entryUser = entry.user;
-        const newKey = entryName + "||" + entryUser;
-        newCart[newKey] = { ...entry, name: entryName };
-    }
-    cart = newCart;
-
-    saveProducts();
-    saveStock();
-    saveCart();
-
-    render();
-    showUserNotice("Artikelname von " + oldName + " zu " + newName + " geändert.");
+async function resetSales(){
+  if (!confirm("Wirklich alle Umsätze löschen?")) return;
+  const { error } = await supabase.from("sales").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) return alert(error.message);
+  await loadAllData();
+  showUserNotice("Alle Umsätze wurden gelöscht.");
 }
-
-function updatePrices(name){
-    const priceInput = document.getElementById("priceInput_" + name);
-    const costInput = document.getElementById("costInput_" + name);
-
-    const price = Math.max(0, parseFloat(priceInput.value) || 0);
-    const cost = Math.max(0, parseFloat(costInput.value) || 0);
-
-    products[name].price = price;
-    products[name].cost = cost;
-
-    saveProducts();
-    renderCostTable();
-    renderItems();
-
-    showUserNotice("Preis und Einkaufspreis für " + name + " gespeichert.");
-}
-function updatePrice(name){
-    const input = document.getElementById("priceInput_" + name);
-    const value = Math.max(0, parseFloat(input.value) || 0);
-    products[name].price = value;
-    saveProducts();
-    renderCostTable();
-    renderItems();
-    showUserNotice("Verkaufspreis für " + name + " gespeichert.");
-}
-
-function updateCost(name){
-    const input = document.getElementById("costInput_" + name);
-    const value = Math.max(0, parseFloat(input.value) || 0);
-    products[name].cost = value;
-    saveProducts();
-    renderCostTable();
-    showUserNotice("Einkaufspreis für " + name + " gespeichert.");
-}
-
-function resetEmployeeSales(){
-    if(!confirm("Alle Mitarbeiter-Umsätze und Gewinne wirklich löschen?")) return;
-
-    for(let user in userSales){
-        userSales[user] = 0;
-    }
-    for(let user in userProfit){
-        userProfit[user] = 0;
-    }
-
-    saveUserSales();
-    saveUserProfit();
-    renderUsers();
-    showUserNotice("Alle Mitarbeiter-Umsätze und Gewinne wurden gelöscht.");
-}
+window.resetSales = resetSales;
 
 function renderItems(){
-    const wrapper = document.getElementById("itemsList");
-    wrapper.innerHTML = "";
+  const wrapper = byId("itemsList");
+  wrapper.innerHTML = "";
 
-    const groupedProducts = {};
+  const grouped = {};
+  products.forEach(product => {
+    const category = product.category || "Sonstiges";
+    const sub = product.subcategory || "";
+    if (!grouped[category]) grouped[category] = {};
+    if (!grouped[category][sub]) grouped[category][sub] = [];
+    grouped[category][sub].push(product);
+  });
 
-    for (let item in products) {
-        const product = products[item];
-        const category = product.category || "Sonstiges";
-        const subcategory = product.subcategory || "";
+  Object.keys(grouped).forEach(category => {
+    const title = document.createElement("h3");
+    title.textContent = category;
+    title.style.marginTop = "16px";
+    wrapper.appendChild(title);
 
-        if (!groupedProducts[category]) groupedProducts[category] = {};
-        if (!groupedProducts[category][subcategory]) groupedProducts[category][subcategory] = [];
+    Object.keys(grouped[category]).forEach(sub => {
+      if (sub) {
+        const b = document.createElement("div");
+        b.className = "badge";
+        b.textContent = sub;
+        wrapper.appendChild(b);
+      }
+      const grid = document.createElement("div");
+      grid.className = "item-grid";
 
-        groupedProducts[category][subcategory].push(item);
-    }
+      grouped[category][sub].forEach(product => {
+        const btn = document.createElement("button");
+        btn.disabled = Number(product.stock) <= 0;
+        btn.textContent = `${product.name} - $${money(product.sale_price)} | ${product.stock}`;
+        btn.onclick = () => addItem(product.id);
+        grid.appendChild(btn);
+      });
 
-    for (let category in groupedProducts) {
-        const title = document.createElement("h3");
-        title.textContent = category;
-        title.style.marginTop = "16px";
-        wrapper.appendChild(title);
-
-        for (let subcategory in groupedProducts[category]) {
-            if(subcategory){
-                const sub = document.createElement("div");
-                sub.className = "badge";
-                sub.textContent = subcategory;
-                wrapper.appendChild(sub);
-            }
-
-            const grid = document.createElement("div");
-            grid.className = "item-grid";
-
-            groupedProducts[category][subcategory].forEach(item => {
-                const currentStock = stock[item] || 0;
-                const btn = document.createElement("button");
-                btn.textContent = `${item} - $${products[item].price} | ${currentStock}`;
-                btn.disabled = currentStock <= 0;
-                btn.onclick = () => addItem(item, products[item].price);
-                grid.appendChild(btn);
-            });
-
-            wrapper.appendChild(grid);
-        }
-    }
+      wrapper.appendChild(grid);
+    });
+  });
 }
 
 function renderStock(){
-    let table = document.getElementById("stockTable");
-    table.innerHTML = `
-    <tr>
-        <th>Artikel</th>
-        <th>Bestand</th>
-        <th>Speichern</th>
-    </tr>
+  const table = byId("stockTable");
+  table.innerHTML = `
+    <tr><th>Artikel</th><th>Bestand</th><th>Speichern</th></tr>
+  `;
+  products.forEach(product => {
+    const row = document.createElement("tr");
+    const safeId = encodeURIComponent(product.id);
+    row.innerHTML = `
+      <td>${product.name}</td>
+      <td><input class="stock-input" id="stockInput_${product.id}" type="number" min="0" value="${product.stock}"></td>
+      <td><button class="smallbtn" onclick="updateStock('${product.id}')">OK</button></td>
     `;
-
-    for (let item in products) {
-        let row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${item}</td>
-            <td><input class="stock-input" id="stockInput_${item}" type="number" min="0" value="${stock[item] || 0}"></td>
-            <td><button class="smallbtn" onclick="updateStock('${item}')">OK</button></td>
-        `;
-        table.appendChild(row);
-    }
+    table.appendChild(row);
+  });
 }
 
 function renderCart(){
-    let table = document.getElementById("cartTable");
-    table.innerHTML = `
-    <tr>
-        <th>Artikel</th>
-        <th>Menge</th>
-        <th>Person</th>
-        <th>Preis</th>
-        <th></th>
-    </tr>
+  const table = byId("cartTable");
+  table.innerHTML = `
+    <tr><th>Artikel</th><th>Menge</th><th>Person</th><th>Preis</th><th></th></tr>
+  `;
+  let total = 0;
+  Object.keys(cart).forEach(key => {
+    const entry = cart[key];
+    const sum = entry.qty * entry.sale_price;
+    total += sum;
+    const safeKey = encodeURIComponent(key);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${entry.product_name}</td>
+      <td>${entry.qty}</td>
+      <td>${entry.employee_name}</td>
+      <td>$${money(sum)}</td>
+      <td><button class="smallbtn" onclick="removeItem(decodeURIComponent('${safeKey}'))">-</button></td>
     `;
-
-    let total = 0;
-
-    for(let key in cart){
-        let data = cart[key];
-        let sum = data.qty * data.price;
-        total += sum;
-
-        let safeKey = encodeURIComponent(key);
-
-        let row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${data.name}</td>
-            <td>${data.qty}</td>
-            <td>${data.user || "-"}</td>
-            <td>$${sum.toFixed(2)}</td>
-            <td><button class="smallbtn" onclick="removeItem(decodeURIComponent('${safeKey}'))">-</button></td>
-        `;
-        table.appendChild(row);
-    }
-
-    document.getElementById("sessionTotal").textContent = total.toFixed(2);
+    table.appendChild(row);
+  });
+  byId("sessionTotal").textContent = money(total);
 }
 
 function renderUsers(){
-    const select = document.getElementById("activeUserSelect");
-    const table = document.getElementById("userSalesTable");
-
-    select.innerHTML = "";
-    users.forEach(user => {
-        const option = document.createElement("option");
-        option.value = user;
-        option.textContent = user;
-        if(user === activeUser) option.selected = true;
-        select.appendChild(option);
-    });
-
-    table.innerHTML = `
-    <tr>
-        <th>Mitarbeiter</th>
-        <th>Umsatz</th>
-        <th>Reingewinn</th>
-    </tr>
-    `;
-
-    users.forEach(user => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${user}${user === activeUser ? " ✅" : ""}</td><td>$${(userSales[user] || 0).toFixed(2)}</td><td>$${(userProfit[user] || 0).toFixed(2)}</td>`;
-        table.appendChild(row);
-    });
-
-    updateActiveUserBadge();
+  const select = byId("activeUserSelect");
+  select.innerHTML = "";
+  employees.forEach(emp => {
+    const option = document.createElement("option");
+    option.value = emp.id;
+    option.textContent = emp.name;
+    if (emp.id === activeEmployeeId) option.selected = true;
+    select.appendChild(option);
+  });
+  updateActiveUserBadge();
 }
 
-function renderCostTable(){
-    const existing = document.getElementById("costTable");
-    if (!existing) return;
+function renderSummary(){
+  const totalSales = sales.reduce((sum, s) => sum + Number(s.sale_price) * Number(s.qty), 0);
+  const totalProfit = sales.reduce((sum, s) => sum + (Number(s.sale_price) - Number(s.cost_price)) * Number(s.qty), 0);
 
-    existing.innerHTML = `
+  byId("summaryTable").innerHTML = `
+    <tr><th>Gesamt Umsatz</th><th>Gesamt Gewinn</th><th>Buchungen</th></tr>
+    <tr><td>$${money(totalSales)}</td><td>$${money(totalProfit)}</td><td>${sales.length}</td></tr>
+  `;
+}
+
+function renderEditProducts(){
+  const table = byId("editProductsTable");
+  table.innerHTML = `
     <tr>
-        <th>Artikelname</th>
-        <th>Verkauf (änderbar)</th>
-        <th>Einkauf</th>
-        <th>Gewinn/Stück</th>
-        <th></th>
+      <th>Artikelname</th>
+      <th>Verkauf</th>
+      <th>Einkauf</th>
+      <th>Gewinn/Stück</th>
+      <th></th>
     </tr>
+  `;
+
+  products.forEach(product => {
+    const safeId = encodeURIComponent(product.id);
+    const profit = Number(product.sale_price) - Number(product.cost_price);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input class="name-input" id="nameInput_${safeId}" type="text" value="${product.name}"></td>
+      <td><input class="stock-input" id="priceInput_${safeId}" type="number" min="0" step="0.01" value="${product.sale_price}"></td>
+      <td><input class="stock-input" id="costInput_${safeId}" type="number" min="0" step="0.01" value="${product.cost_price}"></td>
+      <td>$${money(profit)}</td>
+      <td><button class="smallbtn" onclick="saveAll('${product.id}')">Speichern</button></td>
     `;
-
-    for (let item in products) {
-        const sell = parseFloat(products[item].price) || 0;
-        const cost = parseFloat(products[item].cost) || 0;
-        const profit = sell - cost;
-
-        let row = document.createElement("tr");
-        const safeItem = encodeURIComponent(item);
-        row.innerHTML = `
-            <td>
-                <input class="name-input" id="nameInput_${safeItem}" type="text" value="${item}">
-            </td>
-            <td><input class="stock-input" id="priceInput_${item}" type="number" min="0" step="0.01" value="${sell}"></td>
-            <td><input class="stock-input" id="costInput_${item}" type="number" min="0" step="0.01" value="${cost}"></td>
-            <td>$${profit.toFixed(2)}</td>
-            <td>
-                <button class="smallbtn" onclick="saveAll('${item.replace(/'/g, "\'")}')">Speichern</button>
-            </td>
-        `;
-        existing.appendChild(row);
-    }
+    table.appendChild(row);
+  });
 }
 
 function render(){
-    renderItems();
-    renderStock();
-    renderCart();
-    renderUsers();
-    renderCostTable();
-    updateActiveUserBadge();
+  renderItems();
+  renderStock();
+  renderCart();
+  renderUsers();
+  renderSummary();
+  renderEditProducts();
+  updateActiveUserBadge();
 }
 
-saveStock();
-saveProducts();
-saveUsers();
-saveUserSales();
-saveUserProfit();
-saveActiveUser();
-render();
+async function boot(){
+  try {
+    await loadAllData();
+    setInterval(loadAllData, 5000);
+  } catch (e) {
+    alert("Fehler beim Laden der Datenbank: " + e.message);
+  }
+}
+boot();
 </script>
-
-
 </body>
 </html>
