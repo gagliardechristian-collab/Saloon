@@ -215,6 +215,7 @@ function showPage(page){
     byId("cashPageBtn").style.display = "none";
   }
 }
+window.showPage = showPage;
 
 function showNotice(msg){ byId("stockNotice").textContent = msg || ""; }
 function showProductNotice(msg){ byId("productNotice").textContent = msg || ""; }
