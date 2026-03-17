@@ -38,6 +38,9 @@ input[type="number"]{width:100px;text-align:center}
 hr{border:1px solid #6a4a2a;margin:20px 0}
 .status-ok{color:#8ed081}
 .status-bad{color:#ff9b8a}
+.employee-admin-table .smallbtn{width:auto;margin:0}
+.employee-admin-table input{width:90px}
+.employee-admin-table td:last-child{white-space:nowrap}
 @media (max-width:1450px){.container{grid-template-columns:repeat(2,minmax(260px,340px))}}
 @media (max-width:980px){.employee-grid{grid-template-columns:1fr}}
 @media (max-width:760px){.container{grid-template-columns:1fr}}
@@ -58,7 +61,7 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
 <div class="topbar">
   <h1>🤠 Saloon Management System</h1>
   <div class="top-actions">
-    <div class="info-box">Eingeloggt: <strong id="activeUserBadge">Niemand</strong></div>
+    <div class="info-box">Kasse aktiv: <strong id="activeUserBadge">Niemand</strong></div>
     <button class="topbtn" id="employeePageBtn" onclick="showPage('employee')">Mitarbeiter Login</button>
     <button class="secondarybtn" id="cashPageBtn" onclick="showPage('cash')" style="display:none;">Zurück zur Kasse</button>
   </div>
@@ -166,7 +169,7 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
       </div>
 
       <div class="panel">
-        <h2>Mitarbeiter Login</h2>
+        <h2>Mitarbeiter Login & Lohn</h2>
         <p style="margin:8px 0 4px;">Neuen Mitarbeiter anlegen</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <input id="newUserName" type="text" placeholder="Name eingeben" style="flex:1;min-width:180px;text-align:left;">
@@ -175,14 +178,18 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
         </div>
 
         <div class="section-gap">
-          <p style="margin:8px 0 4px;">Mitarbeiter auswählen</p>
+          <p style="margin:8px 0 4px;">Kassen-Bediener auf diesem Gerät</p>
           <select id="activeUserSelect" class="full"></select>
-          <button onclick="setActiveUser()" style="margin-top:10px;">Einloggen</button>
+          <button onclick="setActiveUser()" style="margin-top:10px;">Für Kasse auswählen</button>
         </div>
 
         <div class="section-gap info-box">
-          Aktiver Mitarbeiter: <strong id="activeUserLabel">Niemand</strong>
+          Aktiver Kassen-Mitarbeiter: <strong id="activeUserLabel">Niemand</strong>
         </div>
+
+        <hr>
+        <h3 style="margin-top:0;">Stempeluhr & Stundenlohn</h3>
+        <table id="employeeManagerTable" class="employee-admin-table"></table>
         <div class="notice" id="userNotice"></div>
       </div>
 
@@ -191,6 +198,12 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
         <table id="salesOverviewTable"></table>
         <button onclick="resetSales()" class="dangerbtn" style="margin-top:12px;">Alle Umsätze löschen</button>
         <div class="notice">Gesamtumsatz und Umsatz pro Mitarbeiter.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Lohnübersicht</h2>
+        <table id="payrollTable"></table>
+        <div class="notice" id="payrollNotice">Je volle Stunde wird der hinterlegte Stundenlohn automatisch von der Kasse abgezogen.</div>
       </div>
 
       <div class="panel">
@@ -245,6 +258,9 @@ let cart = {};
 let purchaseCart = {};
 let purchaseHistory = [];
 let customCategories = [];
+let employeeRates = {};
+let activeShifts = [];
+let payrollHistory = [];
 
 const byId = id => document.getElementById(id);
 const money = n => Number(n || 0).toFixed(2);
@@ -293,6 +309,82 @@ function updateActiveUserBadge(){
   const name = active ? active.name : "Niemand";
   byId("activeUserBadge").textContent = name;
   byId("activeUserLabel").textContent = name;
+}
+
+function getStoredActiveEmployeeId(){
+  return localStorage.getItem("activeEmployeeId") || null;
+}
+
+function setStoredActiveEmployeeId(id){
+  if (id) localStorage.setItem("activeEmployeeId", id);
+  else localStorage.removeItem("activeEmployeeId");
+}
+
+function getHourlyRate(employeeId){
+  return Math.max(0, Number(employeeRates?.[employeeId] || 0));
+}
+
+function isEmployeeClockedIn(employeeId){
+  return activeShifts.some(shift => shift.employee_id === employeeId);
+}
+
+async function saveEmployeeRates(){
+  await upsertSetting("employee_rates", { items: employeeRates });
+}
+
+async function saveActiveShifts(){
+  await upsertSetting("active_shifts", { items: activeShifts });
+}
+
+async function savePayrollHistory(){
+  await upsertSetting("payroll_history", { items: payrollHistory });
+}
+
+async function processPayrollDeductions(){
+  if (!Array.isArray(activeShifts) || !activeShifts.length) return;
+
+  const nowMs = Date.now();
+  let totalDeduction = 0;
+  let changed = false;
+
+  activeShifts = activeShifts.map(shift => {
+    const rate = getHourlyRate(shift.employee_id);
+    const anchorIso = shift.last_paid_at || shift.clock_in_at;
+    const anchorMs = new Date(anchorIso).getTime();
+    if (!Number.isFinite(anchorMs) || rate <= 0) return shift;
+
+    const fullHours = Math.floor((nowMs - anchorMs) / 3600000);
+    if (fullHours <= 0) return shift;
+
+    const amount = fullHours * rate;
+    totalDeduction += amount;
+    changed = true;
+
+    payrollHistory.unshift({
+      employee_id: shift.employee_id,
+      employee_name: shift.employee_name,
+      hours: fullHours,
+      hourly_rate: rate,
+      total_amount: amount,
+      booked_at: new Date(nowMs).toISOString(),
+      period_start: new Date(anchorMs).toISOString(),
+      period_end: new Date(anchorMs + fullHours * 3600000).toISOString()
+    });
+
+    return {
+      ...shift,
+      last_paid_at: new Date(anchorMs + fullHours * 3600000).toISOString()
+    };
+  });
+
+  if (!changed) return;
+
+  bank = Number(bank) - totalDeduction;
+  await Promise.all([
+    upsertSetting("bank_total", { amount: bank }),
+    saveActiveShifts(),
+    savePayrollHistory()
+  ]);
 }
 
 
@@ -504,8 +596,11 @@ async function deleteSelectedRecord(){
 
     if (activeEmployeeId === value) {
       activeEmployeeId = null;
-      await upsertSetting("active_employee_id", { id: null });
+      setStoredActiveEmployeeId(null);
     }
+    delete employeeRates[value];
+    activeShifts = activeShifts.filter(shift => shift.employee_id !== value);
+    await Promise.all([saveEmployeeRates(), saveActiveShifts()]);
 
     await loadAllData();
     renderDeleteOptions();
@@ -564,9 +659,17 @@ async function loadAllData(){
   const settings = {};
   (settingsRes.data || []).forEach(row => settings[row.key] = row.value || {});
   bank = Number(settings.bank_total?.amount || 0);
-  activeEmployeeId = settings.active_employee_id?.id || null;
   customCategories = Array.isArray(settings.custom_categories?.items) ? settings.custom_categories.items : [];
   purchaseHistory = Array.isArray(settings.purchase_history?.items) ? settings.purchase_history.items : [];
+  employeeRates = settings.employee_rates?.items && typeof settings.employee_rates.items === "object" ? settings.employee_rates.items : {};
+  activeShifts = Array.isArray(settings.active_shifts?.items) ? settings.active_shifts.items : [];
+  payrollHistory = Array.isArray(settings.payroll_history?.items) ? settings.payroll_history.items : [];
+
+  const storedId = getStoredActiveEmployeeId();
+  activeEmployeeId = employees.some(e => e.id === storedId) ? storedId : null;
+  if (!activeEmployeeId) setStoredActiveEmployeeId(null);
+
+  await processPayrollDeductions();
 
   byId("bank").value = bank;
   const bd = byId("bankDisplay"); if (bd) bd.textContent = money(bank);
@@ -620,8 +723,11 @@ async function deleteUser(){
 
   if (activeEmployeeId === userId) {
     activeEmployeeId = null;
-    await upsertSetting("active_employee_id", { id: null });
+    setStoredActiveEmployeeId(null);
   }
+  delete employeeRates[userId];
+  activeShifts = activeShifts.filter(shift => shift.employee_id !== userId);
+  await Promise.all([saveEmployeeRates(), saveActiveShifts()]);
 
   await loadAllData();
   showUserNotice(employee.name + " wurde gelöscht.");
@@ -630,13 +736,58 @@ window.deleteUser = deleteUser;
 
 async function setActiveUser(){
   const userId = byId("activeUserSelect").value || null;
-  await upsertSetting("active_employee_id", { id: userId });
   activeEmployeeId = userId;
+  setStoredActiveEmployeeId(userId);
   updateActiveUserBadge();
   renderCart();
-  showUserNotice("Mitarbeiter eingeloggt.");
+  showUserNotice("Kassen-Mitarbeiter auf diesem Gerät gesetzt.");
 }
 window.setActiveUser = setActiveUser;
+
+async function saveHourlyRate(employeeId){
+  const input = byId("hourlyRateInput_" + encodeURIComponent(employeeId));
+  if (!input) return;
+  employeeRates[employeeId] = Math.max(0, Number(input.value || 0));
+  await saveEmployeeRates();
+  renderEmployeeManager();
+  renderPayrollOverview();
+  showUserNotice("Stundenlohn gespeichert.");
+}
+window.saveHourlyRate = saveHourlyRate;
+
+async function clockInEmployee(employeeId){
+  const employee = employees.find(e => e.id === employeeId);
+  if (!employee) return showUserNotice("Mitarbeiter nicht gefunden.");
+  if (isEmployeeClockedIn(employeeId)) return showUserNotice(employee.name + " ist bereits eingestempelt.");
+
+  activeShifts.unshift({
+    employee_id: employee.id,
+    employee_name: employee.name,
+    clock_in_at: new Date().toISOString(),
+    last_paid_at: new Date().toISOString()
+  });
+  await saveActiveShifts();
+  renderEmployeeManager();
+  renderPayrollOverview();
+  showUserNotice(employee.name + " wurde eingestempelt.");
+}
+window.clockInEmployee = clockInEmployee;
+
+async function clockOutEmployee(employeeId){
+  const employee = employees.find(e => e.id === employeeId);
+  if (!employee) return showUserNotice("Mitarbeiter nicht gefunden.");
+  if (!isEmployeeClockedIn(employeeId)) return showUserNotice(employee.name + " ist nicht eingestempelt.");
+
+  await processPayrollDeductions();
+  activeShifts = activeShifts.filter(shift => shift.employee_id !== employeeId);
+  await saveActiveShifts();
+  byId("bank").value = money(bank);
+  const bd = byId("bankDisplay");
+  if (bd) bd.textContent = money(bank);
+  render();
+  showUserNotice(employee.name + " wurde ausgestempelt.");
+}
+window.clockOutEmployee = clockOutEmployee;
 
 async function addNewProduct(){
   const name = byId("newName").value.trim();
@@ -1101,6 +1252,82 @@ function renderUsers(){
   updateActiveUserBadge();
 }
 
+function renderEmployeeManager(){
+  const table = byId("employeeManagerTable");
+  if (!table) return;
+
+  table.innerHTML = `
+    <tr>
+      <th>Mitarbeiter</th>
+      <th>Std./Lohn</th>
+      <th>Status</th>
+      <th>Aktion</th>
+    </tr>
+  `;
+
+  if (!employees.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="4">Noch keine Mitarbeiter angelegt.</td>`;
+    table.appendChild(row);
+    return;
+  }
+
+  employees.forEach(emp => {
+    const activeShift = activeShifts.find(shift => shift.employee_id === emp.id);
+    const safeId = encodeURIComponent(emp.id);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${emp.name}</td>
+      <td>
+        <input id="hourlyRateInput_${safeId}" type="number" min="0" step="0.01" value="${money(getHourlyRate(emp.id))}">
+        <button class="smallbtn" onclick="saveHourlyRate('${emp.id}')">Speichern</button>
+      </td>
+      <td class="${activeShift ? 'status-ok' : 'status-bad'}">
+        ${activeShift ? `Eingestempelt seit ${new Date(activeShift.clock_in_at).toLocaleString('de-DE')}` : 'Nicht eingestempelt'}
+      </td>
+      <td>
+        <button class="smallbtn" onclick="clockInEmployee('${emp.id}')" ${activeShift ? 'disabled' : ''}>Einloggen</button>
+        <button class="smallbtn secondarybtn" onclick="clockOutEmployee('${emp.id}')" ${activeShift ? '' : 'disabled'}>Ausloggen</button>
+      </td>
+    `;
+    table.appendChild(row);
+  });
+}
+
+function renderPayrollOverview(){
+  const table = byId("payrollTable");
+  if (!table) return;
+
+  table.innerHTML = `
+    <tr>
+      <th>Zeitpunkt</th>
+      <th>Mitarbeiter</th>
+      <th>Stunden</th>
+      <th>Satz</th>
+      <th>Abzug</th>
+    </tr>
+  `;
+
+  if (!payrollHistory.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="5">Noch keine Lohnabbuchungen vorhanden.</td>`;
+    table.appendChild(row);
+    return;
+  }
+
+  payrollHistory.slice(0, 12).forEach(entry => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(entry.booked_at).toLocaleString('de-DE')}</td>
+      <td>${entry.employee_name || 'Unbekannt'}</td>
+      <td>${entry.hours}</td>
+      <td>$${money(entry.hourly_rate)}</td>
+      <td>-$${money(entry.total_amount)}</td>
+    `;
+    table.appendChild(row);
+  });
+}
+
 
 function renderEmployeeSales(){
   const table = byId("employeeSalesTable");
@@ -1208,84 +1435,4 @@ function renderSalesOverview(){
         <td>$${money(entry.sales)}</td>
         <td>$${money(entry.profit)}</td>
         <td>${entry.bookings}</td>
-      `;
-      table.appendChild(row);
-    });
-
-  const totalRow=document.createElement("tr");
-  totalRow.style.fontWeight="bold";
-  totalRow.innerHTML=`
-    <td>GESAMT</td>
-    <td>$${money(totalSales)}</td>
-    <td>$${money(totalProfit)}</td>
-    <td>-</td>
-  `;
-  table.appendChild(totalRow);
-}
-
-function renderSummary(){
-  const totalSales = sales.reduce((sum, s) => sum + Number(s.sale_price) * Number(s.qty), 0);
-  const totalProfit = sales.reduce((sum, s) => sum + (Number(s.sale_price) - Number(s.cost_price)) * Number(s.qty), 0);
-
-  byId("summaryTable").innerHTML = `
-    <tr><th>Gesamt Umsatz</th><th>Gesamt Gewinn</th><th>Buchungen</th></tr>
-    <tr><td>$${money(totalSales)}</td><td>$${money(totalProfit)}</td><td>${sales.length}</td></tr>
-  `;
-}
-
-function renderEditProducts(){
-  const table = byId("editProductsTable");
-  table.innerHTML = `
-    <tr>
-      <th>Artikelname</th>
-      <th>Verkauf</th>
-      <th>Einkauf</th>
-      <th>Gewinn/Stück</th>
-      <th>Aktion</th>
-    </tr>
-  `;
-
-  products.forEach(product => {
-    const safeId = encodeURIComponent(product.id);
-    const profit = Number(product.sale_price) - Number(product.cost_price);
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><input class="name-input" id="nameInput_${safeId}" type="text" value="${product.name}"></td>
-      <td><input class="stock-input" id="priceInput_${safeId}" type="number" min="0" step="0.01" value="${product.sale_price}"></td>
-      <td><input class="stock-input" id="costInput_${safeId}" type="number" min="0" step="0.01" value="${product.cost_price}"></td>
-      <td>$${money(profit)}</td>
-      <td>
-        <button class="smallbtn" onclick="saveAll('${product.id}')">Speichern</button>
-        <button class="smallbtn dangerbtn" onclick="deleteProduct('${product.id}')" style="margin-left:6px;">Löschen</button>
-      </td>
-    `;
-    table.appendChild(row);
-  });
-}
-
-function render(){
-  renderItems();
-  renderStock();
-  renderCart();
-  renderUsers();
-  renderSalesOverview();
-  renderPurchaseCart();
-  renderPurchaseHistory();
-  renderEditProducts();
-  fillCategorySelectors();
-  renderDeleteOptions();
-  updateActiveUserBadge();
-}
-
-async function boot(){
-  try {
-    await loadAllData();
-    setInterval(loadAllData, 5000);
-  } catch (e) {
-    alert("Fehler beim Laden der Datenbank: " + e.message);
-  }
-}
-boot();
-</script>
-</body>
-</html>
+     ... (3 kB verbleibend)
