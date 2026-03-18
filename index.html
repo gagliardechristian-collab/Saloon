@@ -33,12 +33,20 @@ input[type="number"]{width:100px;text-align:center}
 .section-gap{margin-top:16px}
 .page{display:none}
 .page.active{display:block}
-.employee-wrap{max-width:1200px;margin:0 auto}
-.employee-grid{display:grid;grid-template-columns:repeat(6,minmax(210px,1fr));gap:24px}
+.employee-wrap{max-width:1700px;margin:0 auto}
+.employee-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px}
+.wide-panel{grid-column:span 2}
+.panel table{display:block;overflow-x:auto;width:100%}
+.panel table tbody,.panel table tr{width:100%;table-layout:auto}
+#salesOverviewTable th,#salesOverviewTable td,#purchaseHistoryTable th,#purchaseHistoryTable td{font-size:15px}
+#purchaseHistoryTable td:first-child{min-width:140px}
+#salesOverviewTable td:first-child{min-width:140px}
+
 hr{border:1px solid #6a4a2a;margin:20px 0}
 .status-ok{color:#8ed081}
 .status-bad{color:#ff9b8a}
 @media (max-width:1450px){.container{grid-template-columns:repeat(2,minmax(260px,340px))}}
+@media (max-width:1200px){.wide-panel{grid-column:span 1}}
 @media (max-width:980px){.employee-grid{grid-template-columns:1fr}}
 @media (max-width:760px){.container{grid-template-columns:1fr}}
 
@@ -186,7 +194,7 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
         <div class="notice" id="userNotice"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel wide-panel">
         <h2>Umsatz Übersicht</h2>
         <table id="salesOverviewTable"></table>
         <button onclick="resetSales()" class="dangerbtn" style="margin-top:12px;">Alle Umsätze löschen</button>
@@ -209,7 +217,7 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
       </div>
 
 
-      <div class="panel">
+      <div class="panel wide-panel">
         <h2>Einkaufsübersicht</h2>
         <table id="purchaseHistoryTable"></table>
         <button class="dangerbtn" onclick="clearPurchaseHistory()" style="margin-top:12px;">Einkaufshistorie löschen</button>
