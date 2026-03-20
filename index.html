@@ -1199,9 +1199,14 @@ function renderEmployeeProductSales(){
   const table = byId("employeeProductSalesTable");
   if (!table) return;
 
+  const sourceSessions =
+    Array.isArray(window.sessions) ? window.sessions :
+    Array.isArray(globalThis.sessions) ? globalThis.sessions :
+    [];
+
   const byEmployee = {};
 
-  sessions.forEach(session=>{
+  sourceSessions.forEach(session=>{
     const employee = session.employee || "Unbekannt";
     if (!byEmployee[employee]) byEmployee[employee] = { employee, items: {}, qty: 0, sales: 0 };
 
