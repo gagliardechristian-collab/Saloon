@@ -1199,31 +1199,31 @@ function renderEmployeeProductSales(){
   const table = byId("employeeProductSalesTable");
   if (!table) return;
 
-  const sourceSessions =
-    Array.isArray(window.sessions) ? window.sessions :
-    Array.isArray(globalThis.sessions) ? globalThis.sessions :
+  const sourceSales =
+    Array.isArray(window.sales) ? window.sales :
+    Array.isArray(globalThis.sales) ? globalThis.sales :
     [];
 
   const byEmployee = {};
 
-  sourceSessions.forEach(session=>{
-    const employee = session.employee || "Unbekannt";
-    if (!byEmployee[employee]) byEmployee[employee] = { employee, items: {}, qty: 0, sales: 0 };
+  sourceSales.forEach(sale => {
+    const employee = sale.employee_name || "Unbekannt";
+    const productName = sale.product_name || "Artikel";
+    const qty = Number(sale.qty || 0);
+    const revenue = Number(sale.sale_price || 0) * qty;
 
-    (session.items || []).forEach(item=>{
-      const name = item.name || "Artikel";
-      const qty = Number(item.qty || 0);
-      const price = Number(item.salePrice || item.price || 0);
+    if (!byEmployee[employee]) {
+      byEmployee[employee] = { employee, items: {}, qty: 0, sales: 0 };
+    }
 
-      if (!byEmployee[employee].items[name]) {
-        byEmployee[employee].items[name] = { qty: 0, sales: 0 };
-      }
+    if (!byEmployee[employee].items[productName]) {
+      byEmployee[employee].items[productName] = { qty: 0, sales: 0 };
+    }
 
-      byEmployee[employee].items[name].qty += qty;
-      byEmployee[employee].items[name].sales += qty * price;
-      byEmployee[employee].qty += qty;
-      byEmployee[employee].sales += qty * price;
-    });
+    byEmployee[employee].items[productName].qty += qty;
+    byEmployee[employee].items[productName].sales += revenue;
+    byEmployee[employee].qty += qty;
+    byEmployee[employee].sales += revenue;
   });
 
   table.innerHTML = `
@@ -1244,22 +1244,10 @@ function renderEmployeeProductSales(){
     return;
   }
 
-  employees.forEach(entry=>{
+  employees.forEach(entry => {
     const items = Object.entries(entry.items).sort((a,b)=>b[1].qty-a[1].qty || b[1].sales-a[1].sales);
 
-    if (!items.length) {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${entry.employee}</td>
-        <td>-</td>
-        <td>0</td>
-        <td>$0.00</td>
-      `;
-      table.appendChild(row);
-      return;
-    }
-
-    items.forEach((itemEntry, index)=>{
+    items.forEach((itemEntry, index) => {
       const [name, stats] = itemEntry;
       const row = document.createElement("tr");
       row.innerHTML = `
