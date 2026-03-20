@@ -49,6 +49,8 @@ input[type="number"]{width:100px;text-align:center}
 #editProductsTable td:nth-child(2),#editProductsTable td:nth-child(3){min-width:120px}
 #editProductsTable td:nth-child(4){min-width:110px}
 #editProductsTable td:nth-child(5){min-width:190px}
+#employeeProductSalesTable td:first-child{min-width:160px}
+#employeeProductSalesTable td:nth-child(2){min-width:180px}
 .name-input{width:100%;min-width:180px}
 @media (max-width:1200px){#editProductsTable{min-width:780px}}
 
@@ -104,6 +106,14 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
         <table id="cashSalesOverviewTable"></table>
       </div>
       <div class="notice">Gesamtumsatz und Gewinn pro Mitarbeiter direkt unter den Verkäufen.</div>
+    </div>
+
+    <div class="panel wide-panel">
+      <h2>Wer hat was verkauft?</h2>
+      <div class="table-scroll">
+        <table id="employeeProductSalesTable"></table>
+      </div>
+      <div class="notice">Zeigt pro Mitarbeiter, welche Artikel verkauft wurden und wie oft.</div>
     </div>
 
     <div class="panel">
@@ -1184,6 +1194,90 @@ function renderEmployeeSales(){
 }
 
 
+
+function renderEmployeeProductSales(){
+  const table = byId("employeeProductSalesTable");
+  if (!table) return;
+
+  const byEmployee = {};
+
+  sessions.forEach(session=>{
+    const employee = session.employee || "Unbekannt";
+    if (!byEmployee[employee]) byEmployee[employee] = { employee, items: {}, qty: 0, sales: 0 };
+
+    (session.items || []).forEach(item=>{
+      const name = item.name || "Artikel";
+      const qty = Number(item.qty || 0);
+      const price = Number(item.salePrice || item.price || 0);
+
+      if (!byEmployee[employee].items[name]) {
+        byEmployee[employee].items[name] = { qty: 0, sales: 0 };
+      }
+
+      byEmployee[employee].items[name].qty += qty;
+      byEmployee[employee].items[name].sales += qty * price;
+      byEmployee[employee].qty += qty;
+      byEmployee[employee].sales += qty * price;
+    });
+  });
+
+  table.innerHTML = `
+    <tr>
+      <th>Mitarbeiter</th>
+      <th>Artikel</th>
+      <th>Menge</th>
+      <th>Umsatz</th>
+    </tr>
+  `;
+
+  const employees = Object.values(byEmployee).sort((a,b)=>b.sales-a.sales);
+
+  if (!employees.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="4">Noch keine Verkäufe vorhanden.</td>`;
+    table.appendChild(row);
+    return;
+  }
+
+  employees.forEach(entry=>{
+    const items = Object.entries(entry.items).sort((a,b)=>b[1].qty-a[1].qty || b[1].sales-a[1].sales);
+
+    if (!items.length) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${entry.employee}</td>
+        <td>-</td>
+        <td>0</td>
+        <td>$0.00</td>
+      `;
+      table.appendChild(row);
+      return;
+    }
+
+    items.forEach((itemEntry, index)=>{
+      const [name, stats] = itemEntry;
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${index === 0 ? `<strong>${entry.employee}</strong>` : ""}</td>
+        <td>${name}</td>
+        <td>${stats.qty}</td>
+        <td>$${money(stats.sales)}</td>
+      `;
+      table.appendChild(row);
+    });
+
+    const totalRow = document.createElement("tr");
+    totalRow.style.fontWeight = "bold";
+    totalRow.innerHTML = `
+      <td></td>
+      <td>Summe ${entry.employee}</td>
+      <td>${entry.qty}</td>
+      <td>$${money(entry.sales)}</td>
+    `;
+    table.appendChild(totalRow);
+  });
+}
+
 function renderSalesOverview(){
   const tables = ["salesOverviewTable", "cashSalesOverviewTable"]
     .map(id => byId(id))
@@ -1301,6 +1395,7 @@ function render(){
   renderCart();
   renderUsers();
   renderSalesOverview();
+  renderEmployeeProductSales();
   renderPurchaseCart();
   renderPurchaseHistory();
   renderEditProducts();
