@@ -40,9 +40,11 @@ input[type="number"]{width:100px;text-align:center}
 .panel table{display:block;overflow-x:auto;width:100%}
 .panel table tbody,.panel table tr{width:100%;table-layout:auto}
 .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-#salesOverviewTable th,#salesOverviewTable td,#purchaseHistoryTable th,#purchaseHistoryTable td{font-size:15px}
+#salesOverviewTable th,#salesOverviewTable td,#purchaseHistoryTable th,#purchaseHistoryTable td,#salesHistoryTable th,#salesHistoryTable td{font-size:15px}
 #purchaseHistoryTable td:first-child{min-width:140px}
 #salesOverviewTable td:first-child{min-width:140px}
+#salesHistoryTable td:first-child{min-width:140px}
+#salesHistoryTable td:nth-child(2){min-width:180px}
 #editProductsTable{min-width:860px}
 #editProductsTable th,#editProductsTable td{white-space:nowrap}
 #editProductsTable td:first-child{min-width:220px}
@@ -109,12 +111,13 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
     </div>
 
     <div class="panel wide-panel">
-      <h2>Wer hat was verkauft?</h2>
+      <h2>Verkaufshistorie</h2>
       <div class="table-scroll">
-        <table id="employeeProductSalesTable"></table>
+        <table id="salesHistoryTable"></table>
       </div>
-      <div class="notice">Zeigt pro Mitarbeiter, welche Artikel verkauft wurden und wie oft.</div>
+      <div class="notice">Zeigt alle verkauften Artikel mit Datum, Mitarbeiter, Menge und Umsatz.</div>
     </div>
+
 
     <div class="panel">
       <h2>Lagerbestand</h2>
@@ -1195,77 +1198,39 @@ function renderEmployeeSales(){
 
 
 
-function renderEmployeeProductSales(){
-  const table = byId("employeeProductSalesTable");
+function renderSalesHistory(){
+  const table = byId("salesHistoryTable");
   if (!table) return;
 
-  const sourceSales = Array.isArray(sales) ? sales : [];
-
-  const byEmployee = {};
-
-  sourceSales.forEach(sale => {
-    const employee = sale.employee_name || "Unbekannt";
-    const productName = sale.product_name || "Artikel";
-    const qty = Number(sale.qty || 0);
-    const revenue = Number(sale.sale_price || 0) * qty;
-
-    if (!byEmployee[employee]) {
-      byEmployee[employee] = { employee, items: {}, qty: 0, sales: 0 };
-    }
-
-    if (!byEmployee[employee].items[productName]) {
-      byEmployee[employee].items[productName] = { qty: 0, sales: 0 };
-    }
-
-    byEmployee[employee].items[productName].qty += qty;
-    byEmployee[employee].items[productName].sales += revenue;
-    byEmployee[employee].qty += qty;
-    byEmployee[employee].sales += revenue;
-  });
-
   table.innerHTML = `
-    <tr>
-      <th>Mitarbeiter</th>
-      <th>Artikel</th>
-      <th>Menge</th>
-      <th>Umsatz</th>
-    </tr>
+    <tr><th>Datum</th><th>Artikel</th><th>Menge</th><th>Mitarbeiter</th><th>Einzelpreis</th><th>Gesamt</th></tr>
   `;
 
-  const employees = Object.values(byEmployee).sort((a,b)=>b.sales-a.sales);
-
-  if (!employees.length) {
+  if (!sales.length) {
     const row = document.createElement("tr");
-    row.innerHTML = `<td colspan="4">Noch keine Verkäufe vorhanden.</td>`;
+    row.innerHTML = `<td colspan="5">Noch keine Verkäufe vorhanden.</td>`;
     table.appendChild(row);
     return;
   }
 
-  employees.forEach(entry => {
-    const items = Object.entries(entry.items).sort((a,b)=>b[1].qty-a[1].qty || b[1].sales-a[1].sales);
-
-    items.forEach((itemEntry, index) => {
-      const [name, stats] = itemEntry;
+  sales
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .forEach(sale => {
+      const qty = Number(sale.qty || 0);
+      const salePrice = Number(sale.sale_price || 0);
+      const total = qty * salePrice;
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>${index === 0 ? `<strong>${entry.employee}</strong>` : ""}</td>
-        <td>${name}</td>
-        <td>${stats.qty}</td>
-        <td>$${money(stats.sales)}</td>
+        <td>${sale.created_at ? new Date(sale.created_at).toLocaleString("de-DE") : "-"}</td>
+        <td>${sale.product_name || "Artikel"}</td>
+        <td>${qty}</td>
+        <td>${sale.employee_name || "Unbekannt"}</td>
+        <td>$${money(salePrice)}</td>
+        <td>$${money(total)}</td>
       `;
       table.appendChild(row);
     });
-
-    const totalRow = document.createElement("tr");
-    totalRow.style.fontWeight = "bold";
-    totalRow.innerHTML = `
-      <td></td>
-      <td>Summe ${entry.employee}</td>
-      <td>${entry.qty}</td>
-      <td>$${money(entry.sales)}</td>
-    `;
-    table.appendChild(totalRow);
-  });
 }
 
 function renderSalesOverview(){
@@ -1385,7 +1350,7 @@ function render(){
   renderCart();
   renderUsers();
   renderSalesOverview();
-  renderEmployeeProductSales();
+  renderSalesHistory();
   renderPurchaseCart();
   renderPurchaseHistory();
   renderEditProducts();
