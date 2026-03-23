@@ -1199,10 +1199,7 @@ function renderEmployeeProductSales(){
   const table = byId("employeeProductSalesTable");
   if (!table) return;
 
-  const sourceSales =
-    Array.isArray(window.sales) ? window.sales :
-    Array.isArray(globalThis.sales) ? globalThis.sales :
-    [];
+  const sourceSales = Array.isArray(sales) ? sales : [];
 
   const byEmployee = {};
 
