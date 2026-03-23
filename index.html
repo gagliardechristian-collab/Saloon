@@ -111,11 +111,10 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
     </div>
 
     <div class="panel wide-panel">
-      <h2>Verkaufshistorie</h2>
-      <div class="table-scroll">
-        <table id="salesHistoryTable"></table>
-      </div>
-      <div class="notice">Zeigt alle verkauften Artikel mit Datum, Mitarbeiter, Menge und Umsatz.</div>
+      <h2>Verkaufsübersicht</h2>
+      <table id="salesHistoryTable"></table>
+      <button class="dangerbtn" onclick="clearSalesHistory()" style="margin-top:12px;">Verkaufshistorie löschen</button>
+      <div class="notice" id="salesHistoryNotice">Alle gebuchten Verkäufe mit Datum, Menge und Umsatz.</div>
     </div>
 
 
@@ -324,6 +323,7 @@ function showSalesNotice(msg){ const el = byId("salesNotice"); if (el) el.textCo
 function showDeleteNotice(msg){ const el = byId("deleteNotice"); if (el) el.textContent = msg || ""; }
 function showPurchaseNotice(msg){ const el = byId("purchaseNotice"); if (el) el.textContent = msg || ""; }
 function showPurchaseHistoryNotice(msg){ const el = byId("purchaseHistoryNotice"); if (el) el.textContent = msg || ""; }
+function showSalesHistoryNotice(msg){ const el = byId("salesHistoryNotice"); if (el) el.textContent = msg || ""; }
 
 function getActiveEmployee(){
   return employees.find(e => e.id === activeEmployeeId) || null;
@@ -863,6 +863,16 @@ async function resetSales(){
 }
 window.resetSales = resetSales;
 
+
+async function clearSalesHistory(){
+  if (!confirm("Wirklich die komplette Verkaufshistorie löschen?")) return;
+  const { error } = await supabase.from("sales").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) return alert(error.message);
+  await loadAllData();
+  showSalesHistoryNotice("Verkaufshistorie wurde gelöscht.");
+}
+window.clearSalesHistory = clearSalesHistory;
+
 async function savePurchaseHistory(){
   await upsertSetting("purchase_history", { items: purchaseHistory });
 }
@@ -1203,7 +1213,7 @@ function renderSalesHistory(){
   if (!table) return;
 
   table.innerHTML = `
-    <tr><th>Datum</th><th>Artikel</th><th>Menge</th><th>Mitarbeiter</th><th>Einzelpreis</th><th>Gesamt</th></tr>
+    <tr><th>Datum</th><th>Artikel</th><th>Menge</th><th>Preis</th><th>Gesamt</th></tr>
   `;
 
   if (!sales.length) {
@@ -1225,7 +1235,6 @@ function renderSalesHistory(){
         <td>${sale.created_at ? new Date(sale.created_at).toLocaleString("de-DE") : "-"}</td>
         <td>${sale.product_name || "Artikel"}</td>
         <td>${qty}</td>
-        <td>${sale.employee_name || "Unbekannt"}</td>
         <td>$${money(salePrice)}</td>
         <td>$${money(total)}</td>
       `;
