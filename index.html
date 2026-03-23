@@ -5,45 +5,185 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Saloon ERP – Supabase</title>
 <style>
-body{font-family:Arial,sans-serif;background:#2b1d0e;color:#f5e6c8;margin:0;padding:20px}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
-h1{margin:0}
+:root{
+  --bg:#1a120a;
+  --bg-soft:#24180d;
+  --panel:#2f2012;
+  --panel-2:#3a2715;
+  --panel-3:#4a321c;
+  --border:#6f4b27;
+  --text:#f7ead2;
+  --muted:#d5b78c;
+  --accent:#d7a85b;
+  --accent-strong:#e8bb70;
+  --danger:#b54a3a;
+  --success:#2ecc71;
+  --shadow:0 10px 30px rgba(0,0,0,.28);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:Inter,Arial,sans-serif;
+  background:linear-gradient(180deg,#1a120a 0%, #22160c 100%);
+  color:var(--text);
+  margin:0;
+  padding:24px;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle at top right, rgba(215,168,91,.1), transparent 30%);
+}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  margin:0 auto 24px;
+  padding:16px 18px;
+  max-width:1700px;
+  flex-wrap:wrap;
+  background:rgba(36,24,13,.88);
+  border:1px solid rgba(111,75,39,.65);
+  backdrop-filter:blur(12px);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+}
+h1{margin:0;font-size:clamp(1.5rem,2vw,2.2rem);letter-spacing:.01em}
+h2{margin:0 0 14px;font-size:1.1rem}
+h3{margin:0 0 10px;font-size:1rem;color:#ffe3ae}
+p{color:var(--muted)}
 .top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.container{display:grid;grid-template-columns:repeat(4,minmax(260px,340px));justify-content:center;gap:24px;align-items:start}
-.panel{background:#3a2715;padding:20px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.2)}
-button{width:100%;padding:10px;margin:5px 0;font-size:15px;cursor:pointer;border:none;border-radius:8px}
-button:disabled{cursor:not-allowed;opacity:.55}
-.smallbtn{padding:4px 8px;font-size:12px;width:auto;margin:0}
-.topbtn{width:auto;padding:10px 14px;background:#d7a85b;color:#2b1d0e;font-weight:bold}
-.secondarybtn{width:auto;padding:10px 14px;background:#5a3b1f;color:#f5e6c8}
-.dangerbtn{background:#b54a3a;color:#fff}
-table{width:100%;border-collapse:collapse;margin-top:8px}
-th,td{padding:6px;border-bottom:1px solid #6a4a2a;text-align:left;vertical-align:top}
-.total{font-size:20px;margin-top:10px}
-input,select{padding:6px;font-size:16px;border-radius:6px;border:none;box-sizing:border-box}
-input[type="number"]{width:100px;text-align:center}
+.container{
+  max-width:1700px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1.15fr .95fr 1.2fr 1.2fr;
+  gap:22px;
+  align-items:start;
+}
+.panel{
+  position:relative;
+  background:linear-gradient(180deg,var(--panel) 0%, var(--panel-2) 100%);
+  padding:20px;
+  border-radius:var(--radius);
+  border:1px solid rgba(111,75,39,.72);
+  box-shadow:var(--shadow);
+}
+.panel::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+button{
+  width:100%;
+  padding:11px 14px;
+  margin:6px 0;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  border-radius:12px;
+  transition:transform .15s ease, opacity .15s ease, background .15s ease;
+}
+button:hover{transform:translateY(-1px)}
+button:disabled{cursor:not-allowed;opacity:.5;transform:none}
+.smallbtn{padding:6px 10px;font-size:12px;width:auto;margin:0}
+.topbtn{width:auto;padding:11px 16px;background:var(--accent);color:#22160c;font-weight:700}
+.secondarybtn{width:auto;padding:11px 16px;background:var(--panel-3);color:var(--text)}
+.dangerbtn{background:var(--danger);color:#fff}
+table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  margin-top:10px;
+  overflow:hidden;
+  border-radius:14px;
+  background:rgba(255,255,255,.02);
+}
+th,td{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(111,75,39,.5);
+  text-align:left;
+  vertical-align:top;
+}
+th{
+  color:#ffe3ae;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  background:rgba(255,255,255,.03);
+}
+tr:last-child td{border-bottom:none}
+.total{font-size:1.35rem;margin-top:14px;font-weight:700}
+input,select{
+  padding:10px 12px;
+  font-size:15px;
+  border-radius:12px;
+  border:1px solid rgba(111,75,39,.75);
+  background:#f9f4ec;
+  color:#2b1d0e;
+  box-sizing:border-box;
+}
+input[type="number"]{width:110px;text-align:center}
 .full{width:100%}
-.stock-input{width:70px;font-size:14px;padding:4px}
-.name-input{width:140px;font-size:14px;padding:4px;text-align:left}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#5a3b1f;font-size:12px;margin-bottom:8px}
-.notice{margin-top:12px;min-height:20px;font-size:14px;color:#ffd37a}
-.info-box{padding:8px 12px;border-radius:10px;background:#5a3b1f;font-size:14px}
-.item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:10px}
-.item-grid button{min-height:48px}
-.section-gap{margin-top:16px}
+.stock-input{width:78px;font-size:14px;padding:6px}
+.name-input{width:140px;font-size:14px;padding:6px;text-align:left}
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(215,168,91,.15);
+  border:1px solid rgba(215,168,91,.25);
+  color:#ffe3ae;
+  font-size:12px;
+  margin:8px 0 10px;
+}
+.notice{
+  margin-top:12px;
+  min-height:20px;
+  font-size:13px;
+  color:#ffd37a;
+  line-height:1.4;
+}
+.info-box{
+  padding:10px 14px;
+  border-radius:14px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(111,75,39,.55);
+  font-size:14px;
+  color:var(--muted);
+}
+.item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+.item-grid button{
+  min-height:58px;
+  background:linear-gradient(180deg,#e7b86e 0%,#d39f4f 100%);
+  color:#2b1d0e;
+  text-align:left;
+  line-height:1.25;
+}
+.section-gap{margin-top:18px}
 .page{display:none}
 .page.active{display:block}
 .employee-wrap{max-width:1700px;margin:0 auto}
-.employee-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px}
-.wide-panel{grid-column:span 2}
-.full-width-panel{grid-column:1 / -1}
+.employee-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:22px}
+.employee-grid>.panel{grid-column:span 4}
+.employee-grid>.wide-panel{grid-column:span 8}
+.employee-grid>.full-width-panel{grid-column:1 / -1}
 .panel table{display:block;overflow-x:auto;width:100%}
 .panel table tbody,.panel table tr{width:100%;table-layout:auto}
 .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-#salesOverviewTable th,#salesOverviewTable td,#purchaseHistoryTable th,#purchaseHistoryTable td,#salesHistoryTable th,#salesHistoryTable td{font-size:15px}
-#purchaseHistoryTable td:first-child{min-width:140px}
-#salesOverviewTable td:first-child{min-width:140px}
-#salesHistoryTable td:first-child{min-width:140px}
+#salesOverviewTable th,#salesOverviewTable td,#purchaseHistoryTable th,#purchaseHistoryTable td,#salesHistoryTable th,#salesHistoryTable td{font-size:14px}
+#purchaseHistoryTable td:first-child,#salesOverviewTable td:first-child,#salesHistoryTable td:first-child{min-width:140px}
 #salesHistoryTable td:nth-child(2){min-width:180px}
 #editProductsTable{min-width:860px}
 #editProductsTable th,#editProductsTable td{white-space:nowrap}
@@ -54,31 +194,22 @@ input[type="number"]{width:100px;text-align:center}
 #employeeProductSalesTable td:first-child{min-width:160px}
 #employeeProductSalesTable td:nth-child(2){min-width:180px}
 .name-input{width:100%;min-width:180px}
-@media (max-width:1200px){#editProductsTable{min-width:780px}}
-
-hr{border:1px solid #6a4a2a;margin:20px 0}
+hr{border:none;border-top:1px solid rgba(111,75,39,.55);margin:22px 0}
 .status-ok{color:#8ed081}
 .status-bad{color:#ff9b8a}
-@media (max-width:1450px){.container{grid-template-columns:repeat(2,minmax(260px,340px))}}
-@media (max-width:1200px){.wide-panel{grid-column:span 1}}
-@media (max-width:980px){.employee-grid{grid-template-columns:1fr}}
-@media (max-width:760px){.container{grid-template-columns:1fr}}
-
-.bank-display{
-  font-size:32px;
-  color:#2ecc71;
-  font-weight:bold;
-  margin:10px 0 14px 0;
-}
-.bank-label{
-  margin:0 0 4px 0;
-}
-
+.bank-display{font-size:40px;color:var(--success);font-weight:800;margin:8px 0 14px;letter-spacing:.02em}
+.bank-label{margin:0 0 6px;color:var(--muted)}
+label,p.form-label{display:block;margin:10px 0 6px;font-size:13px;font-weight:700;color:#ffe3ae}
+.muted{color:var(--muted);font-size:13px}
+@media (max-width:1500px){.container{grid-template-columns:repeat(2,minmax(280px,1fr))}}
+@media (max-width:1200px){.employee-grid>.panel,.employee-grid>.wide-panel{grid-column:span 6}}
+@media (max-width:900px){.employee-grid>.panel,.employee-grid>.wide-panel,.employee-grid>.full-width-panel{grid-column:1/-1}.container{grid-template-columns:1fr}}
+@media (max-width:640px){body{padding:14px}.topbar{padding:14px}.panel{padding:16px}h1{font-size:1.3rem}.top-actions{width:100%}.topbtn,.secondarybtn{width:100%}}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <h1>🤠 Saloon Management System</h1>
+  <div><h1>🤠 Saloon Management System</h1><p class="muted" style="margin:6px 0 0;">Kasse, Lager, Mitarbeiter und Einkauf in einer Oberfläche.</p></div>
   <div class="top-actions">
     <div class="info-box">Eingeloggt: <strong id="activeUserBadge">Niemand</strong></div>
     <button class="topbtn" id="employeePageBtn" onclick="showPage('employee')">Mitarbeiter Login</button>
@@ -89,21 +220,21 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
 <div id="cashPage" class="page active">
   <div class="container">
     <div class="panel">
-      <h2>Artikel</h2>
+      <h2>Artikelverkauf</h2><p class="muted">Produkte nach Kategorie, direkt antippbar für die aktuelle Session.</p>
       <div id="itemsList"></div>
       <div class="notice" id="stockNotice"></div>
     </div>
 
     <div class="panel">
-      <h2>Verkäufe</h2>
+      <h2>Aktuelle Session</h2><p class="muted">Hier sammelst du Verkäufe, bevor du sie endgültig buchst.</p>
       <table id="cartTable"></table>
       <div class="total">Session Umsatz: $<span id="sessionTotal">0.00</span></div><div class="notice" id="salesNotice"></div>
-      <button onclick="clearSession()">Session löschen</button>
-      <button onclick="addSessionToBank()">Umsatz übertragen</button>
+      <button onclick="clearSession()">Session leeren</button>
+      <button onclick="addSessionToBank()">Session buchen</button>
     </div>
 
     <div class="panel wide-panel">
-      <h2>Umsatzübersicht</h2>
+      <h2>Team-Umsatz</h2><p class="muted">Direkter Überblick über Umsatz, Gewinn und Buchungen pro Mitarbeiter.</p>
       <div class="table-scroll">
         <table id="cashSalesOverviewTable"></table>
       </div>
@@ -111,21 +242,21 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
     </div>
 
     <div class="panel wide-panel">
-      <h2>Verkaufsübersicht</h2>
+      <h2>Verkaufshistorie</h2><p class="muted">Alle bereits gebuchten Verkäufe in zeitlicher Reihenfolge.</p>
       <table id="salesHistoryTable"></table>
-      <button class="dangerbtn" onclick="clearSalesHistory()" style="margin-top:12px;">Verkaufshistorie löschen</button>
+      <button class="dangerbtn" onclick="clearSalesHistory()" style="margin-top:12px;">Historie ausblenden</button>
       <div class="notice" id="salesHistoryNotice">Alle Umsätze mit Datum, Menge und Gesamtbetrag.</div>
     </div>
 
 
     <div class="panel">
-      <h2>Lagerbestand</h2>
+      <h2>Lagerbestand</h2><p class="muted">Bestände manuell korrigieren und sofort speichern.</p>
       <table id="stockTable"></table>
-      <div class="notice">Lager wird bei „Umsatz übertragen“ zentral in der Datenbank reduziert.</div>
+      <div class="notice">Lager wird bei „Session buchen“ zentral in der Datenbank reduziert.</div>
     </div>
 
     <div class="panel">
-      <h2>Gesamte Kasse</h2>
+      <h2>Kassenbereich</h2><p class="muted">Kassenstand verwalten und neue Artikel anlegen.</p>
       <p class="bank-label">Aktuelles Saloon Geld</p>
       <div class="bank-display">$ <span id="bankDisplay">0.00</span></div>
       <input type="number" id="bank" onchange="saveBank()">
@@ -133,26 +264,26 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
 
       <hr>
       <h3 style="margin-top:0;">Artikel hinzufügen</h3>
-      <p style="margin:8px 0 4px;">Name</p>
+      <p class="form-label">Name</p>
       <input id="newName" class="full" type="text" style="text-align:left;">
-      <p style="margin:8px 0 4px;">Verkaufspreis</p>
+      <p class="form-label">Verkaufspreis</p>
       <input id="newPrice" type="number" min="0" step="0.01">
-      <p style="margin:8px 0 4px;">Einkaufspreis</p>
+      <p class="form-label">Einkaufspreis</p>
       <input id="newCost" type="number" min="0" step="0.01">
-      <p style="margin:8px 0 4px;">Startbestand</p>
+      <p class="form-label">Startbestand</p>
       <input id="newStock" type="number" min="0" step="1">
-      <p style="margin:8px 0 4px;">Kategorie</p>
+      <p class="form-label">Kategorie</p>
       <select id="newCategory" class="full">
         <option value="Getränke">Getränke</option>
         <option value="Essen">Essen</option>
       </select>
-      <p style="margin:8px 0 4px;">Unterkategorie</p>
+      <p class="form-label">Unterkategorie</p>
       <select id="newSubcategory" class="full">
         <option value="Alkoholisch">Alkoholisch</option>
         <option value="Nicht alkoholisch">Nicht alkoholisch</option>
         <option value="">Keine</option>
       </select>
-      <button onclick="addNewProduct()" style="margin-top:12px;">Artikel hinzufügen</button>
+      <button onclick="addNewProduct()" style="margin-top:12px;">Artikel speichern</button>
       <div class="notice" id="productNotice"></div>
     </div>
   </div>
@@ -162,18 +293,18 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
   <div class="employee-wrap">
     <div class="employee-grid">
 <div class="panel">
-        <h2>Verwaltung</h2>
+        <h2>Stammdaten</h2><p class="muted">Kategorien pflegen, Daten laden und die Verbindung prüfen.</p>
 
         <button class="secondarybtn" onclick="testConnection()">Datenbank testen</button>
-        <button class="secondarybtn" onclick="loadAllData()">Jetzt aktualisieren</button>
+        <button class="secondarybtn" onclick="loadAllData()">Daten neu laden</button>
 
         <hr>
 
-        <p style="margin:8px 0 4px;">Neue Kategorie</p>
+        <p class="form-label">Neue Kategorie</p>
         <input id="newCategoryName" class="full" type="text" placeholder="z. B. Snacks" style="text-align:left;">
         <button onclick="addCategory()">Kategorie hinzufügen</button>
 
-        <p style="margin:12px 0 4px;">Neue Unterkategorie</p>
+        <p class="form-label">Neue Unterkategorie</p>
         <select id="adminCategorySelect" class="full"></select>
         <input id="newSubcategoryName" class="full" type="text" placeholder="z. B. Wein" style="text-align:left;margin-top:8px;">
         <button onclick="addSubcategory()">Unterkategorie hinzufügen</button>
@@ -185,9 +316,9 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
       </div>
 
       <div class="panel">
-        <h2>Datenbank verwalten</h2>
+        <h2>Einträge löschen</h2><p class="muted">Einzelne Datensätze gezielt auswählen und entfernen.</p>
 
-        <p style="margin:8px 0 4px;">Bereich</p>
+        <p class="form-label">Bereich</p>
         <select id="deleteTypeSelect" class="full" onchange="renderDeleteOptions()">
           <option value="products">Artikel</option>
           <option value="employees">Mitarbeiter</option>
@@ -195,7 +326,7 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
           <option value="categories">Kategorien</option>
         </select>
 
-        <p style="margin:12px 0 4px;">Eintrag auswählen</p>
+        <p class="form-label">Eintrag auswählen</p>
         <select id="deleteItemSelect" class="full"></select>
 
         <button class="dangerbtn" onclick="deleteSelectedRecord()" style="margin-top:12px;">Ausgewählten Eintrag löschen</button>
@@ -204,8 +335,8 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
       </div>
 
       <div class="panel">
-        <h2>Mitarbeiter Login</h2>
-        <p style="margin:8px 0 4px;">Neuen Mitarbeiter anlegen</p>
+        <h2>Mitarbeiter</h2><p class="muted">Benutzer anlegen, löschen und den aktiven Mitarbeiter setzen.</p>
+        <p class="form-label">Neuen Mitarbeiter anlegen</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <input id="newUserName" type="text" placeholder="Name eingeben" style="flex:1;min-width:180px;text-align:left;">
           <button onclick="addUser()" class="topbtn">Hinzufügen</button>
@@ -213,7 +344,7 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
         </div>
 
         <div class="section-gap">
-          <p style="margin:8px 0 4px;">Mitarbeiter auswählen</p>
+          <p class="form-label">Mitarbeiter auswählen</p>
           <select id="activeUserSelect" class="full"></select>
           <button onclick="setActiveUser()" style="margin-top:10px;">Einloggen</button>
         </div>
@@ -225,17 +356,17 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
       </div>
 
       <div class="panel wide-panel">
-        <h2>Umsatz Übersicht</h2>
+        <h2>Umsatzübersicht</h2><p class="muted">Gesamte Leistung des Teams auf einen Blick.</p>
         <table id="salesOverviewTable"></table>
         <button onclick="resetSales()" class="dangerbtn" style="margin-top:12px;">Alle Umsätze löschen</button>
         <div class="notice">Gesamtumsatz und Umsatz pro Mitarbeiter.</div>
       </div>
 
       <div class="panel">
-        <h2>Wareneinkauf</h2>
-        <p style="margin:8px 0 4px;">Artikel auswählen</p>
+        <h2>Wareneinkauf</h2><p class="muted">Artikel nachbestellen und direkt gegen die Kasse buchen.</p>
+        <p class="form-label">Artikel auswählen</p>
         <select id="purchaseProductSelect" class="full"></select>
-        <p style="margin:12px 0 4px;">Menge</p>
+        <p class="form-label">Menge</p>
         <input id="purchaseQtyInput" type="number" min="1" step="1" value="1">
         <button onclick="addPurchaseItem()" style="margin-top:12px;">Zum Einkauf hinzufügen</button>
 
@@ -248,14 +379,14 @@ hr{border:1px solid #6a4a2a;margin:20px 0}
 
 
       <div class="panel wide-panel">
-        <h2>Einkaufsübersicht</h2>
+        <h2>Einkaufshistorie</h2><p class="muted">Alle gebuchten Einkäufe inklusive Datum, Menge und Kosten.</p>
         <table id="purchaseHistoryTable"></table>
         <button class="dangerbtn" onclick="clearPurchaseHistory()" style="margin-top:12px;">Einkaufshistorie löschen</button>
         <div class="notice" id="purchaseHistoryNotice">Alle gebuchten Wareneinkäufe mit Datum, Menge und Kosten.</div>
       </div>
 
       <div class="panel full-width-panel">
-        <h2>Artikel bearbeiten</h2>
+        <h2>Artikel bearbeiten</h2><p class="muted">Preise und Namen zentral anpassen.</p>
         <div class="table-scroll">
           <table id="editProductsTable"></table>
         </div>
