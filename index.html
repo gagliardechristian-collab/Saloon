@@ -241,7 +241,7 @@ label,p.form-label{display:block;margin:10px 0 6px;font-size:13px;font-weight:70
 <div class="panel wide-panel">
 <h2>Verkaufshistorie</h2><p class="muted">Alle bereits gebuchten Verkäufe in zeitlicher Reihenfolge.</p>
 <table id="salesHistoryTable"></table>
-<button class="dangerbtn" onclick="clearSalesHistory()" style="margin-top:12px;">Historie ausblenden</button>
+<button class="dangerbtn" onclick="clearSalesHistory()" style="margin-top:12px;">Verkaufshistorie leeren</button>
 <div class="notice" id="salesHistoryNotice">Alle Umsätze mit Datum, Menge und Gesamtbetrag.</div>
 </div>
 <div class="panel">
@@ -383,6 +383,7 @@ let cart = {};
 let purchaseCart = {};
 let purchaseHistory = [];
 let customCategories = [];
+let hiddenSalesHistoryIds = [];
 
 const byId = id => document.getElementById(id);
 const money = n => Number(n || 0).toFixed(2);
@@ -706,6 +707,7 @@ async function loadAllData(){
   activeEmployeeId = settings.active_employee_id?.id || null;
   customCategories = Array.isArray(settings.custom_categories?.items) ? settings.custom_categories.items : [];
   purchaseHistory = Array.isArray(settings.purchase_history?.items) ? settings.purchase_history.items : [];
+  hiddenSalesHistoryIds = Array.isArray(settings.hidden_sales_history_ids?.items) ? settings.hidden_sales_history_ids.items : [];
 
   byId("bank").value = bank;
   const bd = byId("bankDisplay"); if (bd) bd.textContent = money(bank);
@@ -906,6 +908,8 @@ async function updateStock(productId){
   const stock = Math.max(0, Number(input.value || 0));
   const { error } = await supabase.from("products").update({ stock }).eq("id", productId);
   if (error) return alert(error.message);
+  hiddenSalesHistoryIds = [];
+  await upsertSetting("hidden_sales_history_ids", { items: [] });
   await loadAllData();
   showNotice("Lagerbestand gespeichert.");
 }
@@ -965,14 +969,24 @@ async function resetSales(){
 window.resetSales = resetSales;
 
 
-function clearSalesHistory(){
-  if (!confirm("Verlauf wirklich ausblenden?")) return;
+async function clearSalesHistory(){
+  const visibleIds = sales
+    .filter(sale => !hiddenSalesHistoryIds.includes(sale.id))
+    .map(sale => sale.id)
+    .filter(Boolean);
 
-  sales = [];
+  if (!visibleIds.length) {
+    showSalesHistoryNotice("Die Verkaufshistorie ist bereits leer.");
+    return;
+  }
+
+  if (!confirm("Willst du wirklich nur die sichtbare Verkaufshistorie leeren? Team-Umsatz bleibt erhalten.")) return;
+
+  hiddenSalesHistoryIds = [...new Set([...hiddenSalesHistoryIds, ...visibleIds])];
+  await upsertSetting("hidden_sales_history_ids", { items: hiddenSalesHistoryIds });
+
   renderSalesHistory();
-
-  const el = byId("salesHistoryNotice");
-  if (el) el.textContent = "Verlauf wurde nur ausgeblendet.";
+  showSalesHistoryNotice("Verkaufshistorie wurde geleert. Team-Umsatz bleibt erhalten.");
 }
 window.clearSalesHistory = clearSalesHistory;
 
@@ -1320,30 +1334,32 @@ function renderSalesHistory(){
     <tr><th>Datum</th><th>Artikel</th><th>Menge</th><th>Preis</th><th>Gesamt</th></tr>
   `;
 
-  if (!sales.length) {
+  const visibleSales = sales
+    .filter(sale => !hiddenSalesHistoryIds.includes(sale.id))
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (!visibleSales.length) {
     const row = document.createElement("tr");
-    row.innerHTML = `<td colspan="5">Noch keine Verkäufe vorhanden.</td>`;
+    row.innerHTML = `<td colspan="5">Keine sichtbaren Verkäufe in der Historie.</td>`;
     table.appendChild(row);
     return;
   }
 
-  sales
-    .slice()
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .forEach(sale => {
-      const qty = Number(sale.qty || 0);
-      const salePrice = Number(sale.sale_price || 0);
-      const total = qty * salePrice;
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${sale.created_at ? new Date(sale.created_at).toLocaleString("de-DE") : "-"}</td>
-        <td>${sale.product_name || "Artikel"}</td>
-        <td>${qty}</td>
-        <td>$${money(salePrice)}</td>
-        <td>$${money(total)}</td>
-      `;
-      table.appendChild(row);
-    });
+  visibleSales.forEach(sale => {
+    const qty = Number(sale.qty || 0);
+    const salePrice = Number(sale.sale_price || 0);
+    const total = qty * salePrice;
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${sale.created_at ? new Date(sale.created_at).toLocaleString("de-DE") : "-"}</td>
+      <td>${sale.product_name || "Artikel"}</td>
+      <td>${qty}</td>
+      <td>$${money(salePrice)}</td>
+      <td>$${money(total)}</td>
+    `;
+    table.appendChild(row);
+  });
 }
 
 function renderSalesOverview(){
