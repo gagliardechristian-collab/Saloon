@@ -241,7 +241,7 @@ label,p.form-label{display:block;margin:10px 0 6px;font-size:13px;font-weight:70
 <div class="panel wide-panel">
 <h2>Verkaufshistorie</h2><p class="muted">Alle bereits gebuchten Verkäufe in zeitlicher Reihenfolge.</p>
 <table id="salesHistoryTable"></table>
-<button class="dangerbtn" onclick="clearSalesHistory()" style="margin-top:12px;">Historie ausblenden</button>
+<button class="dangerbtn" onclick="clearSalesHistory()" style="margin-top:12px;">Alles löschen</button>
 <div class="notice" id="salesHistoryNotice">Alle Umsätze mit Datum, Menge und Gesamtbetrag.</div>
 </div>
 <div class="panel">
@@ -965,14 +965,22 @@ async function resetSales(){
 window.resetSales = resetSales;
 
 
-function clearSalesHistory(){
-  if (!confirm("Verlauf wirklich ausblenden?")) return;
+async function clearSalesHistory(){
+  if (!confirm("Willst du wirklich die komplette Verkaufshistorie löschen?")) return;
 
-  sales = [];
-  renderSalesHistory();
+  const { error } = await supabase
+    .from("sales")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000");
 
-  const el = byId("salesHistoryNotice");
-  if (el) el.textContent = "Verlauf wurde nur ausgeblendet.";
+  if (error) {
+    showSalesHistoryNotice("Fehler beim Löschen: " + error.message);
+    return;
+  }
+
+  await loadAllData();
+
+  showSalesHistoryNotice("Verkaufshistorie wurde komplett gelöscht.");
 }
 window.clearSalesHistory = clearSalesHistory;
 
